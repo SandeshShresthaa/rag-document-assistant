@@ -51,6 +51,8 @@
   background: #1d4ed8;
 }
 .composer button:hover:not(:disabled) { background: #1e40af; }
+.composer .stop-button { background: #b91c1c; }
+.composer .stop-button:hover { background: #991b1b; }
 @media (max-width: 480px) {
   .chat-header, .chat-footer, .message-list { padding: 16px; }
   .message { max-width: 95%; }

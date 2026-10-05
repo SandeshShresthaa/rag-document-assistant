@@ -5,21 +5,21 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1-3 are complete: non-streaming chat with loading and error handling. Task 4a passed a live streaming check. Task 4b implements client streaming and passes automated checks; successful browser streaming verification remains pending after live helper requests encountered upstream failures. Task 4c (Stop button) remains. Task 2b (retry and fallback) is deferred until before Task 12. PDF retrieval and citations are planned in [ROADMAP.md](ROADMAP.md).
+Tasks 1, 2, 2b, 3, and 4 are complete: streaming chat with Stop, loading/error recovery, and retry/model fallback. Task 5 (PDF upload) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 
 1. Run `npm ci` separately in `client/` and `server/`.
-2. Create `server/.env` with `PORT=5000` and `GEMINI_API_KEY=your_key_here` on separate lines.
+2. Create `server/.env` with `PORT=5000`, `GEMINI_API_KEY=your_key_here`, and `GEMINI_MODEL=<your available Gemini model>` on separate lines. Optionally set `GEMINI_FALLBACK_MODEL` to another available model.
 3. Create `client/.env` with `VITE_API_URL=http://localhost:5000`.
 4. In separate terminals, run `npm run dev` in `server/` and `client/`.
 5. Open the URL printed by Vite, usually http://localhost:5173. Restart Vite after changing its environment file.
 
-On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`. Both `.env` files are gitignored. Never place keys in client code or `VITE_` variables, which are exposed to the browser. The current server hardcodes its model; reading it from environment configuration is outstanding Task 2b work.
+On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`. Both `.env` files are gitignored. Never place keys in client code or `VITE_` variables, which are exposed to the browser. Both endpoints read model configuration from `server/.env`. Retry only 429/503 with three total attempts per model and 1s/2s waits. A missing model (404) switches directly to the optional fallback. Other errors fail immediately.
 
 ## Code organization
 
-Currently, `client/src/App.tsx` contains chat layout, state, and requests; `types/chat.ts` defines messages; `App.css` and `index.css` provide styling. `server/src/index.ts` contains Express setup and the Gemini endpoint.
+`client/src/App.tsx` contains chat layout/state and calls `api/chatStream.ts`; `types/chat.ts` defines messages. On the server, `index.ts` wires Express and Gemini to `routes/chat.ts` and `routes/chatStream.ts`. `services/generateWithRetry.ts` provides bounded retry and optional model fallback.
 
 Create modules as features need them, following roadmap Part 2:
 
@@ -33,7 +33,7 @@ Create modules as features need them, following roadmap Part 2:
 | Server `services/` | Feature logic and external API calls |
 | Server `db/` | Database access |
 
-Task 4 introduces `api/chatStream.ts`; Task 9 includes the server route/service refactor. Keep refactors small and preserve existing behavior.
+Task 4 introduced the streaming helper and route separation; Task 9 will extend the server services for RAG. Keep refactors small and preserve existing behavior.
 
 ## Working process
 
@@ -50,7 +50,7 @@ Follow the roadmap's $0 budget, typed code without `any`, and dependency rules. 
 
 `POST /api/chat/stream` accepts `{ "message": "..." }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The client now uses `/api/chat/stream`. The original JSON endpoint remains available.
 
-The streaming route uses `GEMINI_MODEL` from `server/.env` when set, otherwise the existing server model name. No retry or fallback-model logic has been added. To test against Gemini, start the server, then run in PowerShell:
+Both routes require `GEMINI_MODEL` from `server/.env`. Streaming setup retries use an abortable wait; failures after tokens begin are reported without restarting the answer. To test against Gemini, start the server, then run in PowerShell:
 
 ```powershell
 '{"message":"Explain SSE in three short sentences."}' | curl.exe -N -X POST http://localhost:5000/api/chat/stream -H "Content-Type: application/json" --data-binary '@-'
@@ -64,6 +64,21 @@ Disconnecting aborts the local SDK request. This does not guarantee that Google'
 
 ## Task 4b: client streaming
 
-`client/src/api/chatStream.ts` sends the question and reads SSE with a TextDecoder and an incomplete-event buffer. App adds an empty assistant message, appends tokens immutably, and restores the controls after success or failure. Partial answers remain visible on errors. The Stop button is deferred to Task 4c.
+`client/src/api/chatStream.ts` sends the question and reads SSE with a TextDecoder and an incomplete-event buffer. App adds an empty assistant message, appends tokens immutably, and restores the controls after success or failure. Partial answers remain visible on errors. While loading, Stop aborts the request and preserves partial text. Send returns after cleanup; aborting is not an error.
 
-Run `npm test` in `client/` using Node 22.6+ (verified with Node 24.15.0). Tests cover fragmented UTF-8, event boundaries, completion, and failure handling without external API calls. Also run `npm run build` and `npm run lint`. With both servers running, submit a longer question and verify progressive text, scrolling, and another successful submission. Browser verification remains pending; the live helper has verified handling of the server error event.
+Run `npm test` in `client/` using Node 22.6+ (verified with Node 24.15.0). Tests cover fragmented UTF-8, event boundaries, completion, and failure handling without external API calls. Also run `npm run build` and `npm run lint`. With both servers running, submit a longer question and verify progressive text, scrolling, and another successful submission. Browser verification passed using a deterministic model fixture and the actual SSE handler. Live Gemini streaming was also verified separately.
+
+## Task 4c and Phase 1 validation
+
+The controller lives in a React ref. It is passed to fetch, aborted by Stop, and cleaned up when the component unmounts. The reader ignores queued tokens after cancellation. The server detects disconnects and aborts its SDK request. Remote generation cancellation is not guaranteed by Gemini.
+
+Validation on 2026-10-05:
+
+- 14 client parser/cancellation tests passed (`npm test` in client/).
+- 11 server route/retry tests passed (`npm test` in server/).
+- Six real-browser tests passed (`npm run test:browser` in client/): progressive rendering, empty input/loading, Stop before/after first token, post-stop recovery, mid-stream errors, network failure, and navigation cancellation.
+- Client build/lint and server `npm run typecheck` passed.
+- GitHub origin is configured; both environment files are ignored and untracked.
+- A live Gemini stream returned text and [DONE]. A live JSON request exhausted busy retries and correctly returned friendly HTTP 503. Free-tier availability remains variable.
+
+Browser tests launch isolated test servers on ports 5051 and 5174 and use a fake model, so they do not consume Gemini quota. Windows uses installed Edge by default; other systems use Playwright Chromium (install with `npx playwright install chromium`). Set `PLAYWRIGHT_CHANNEL` to override the browser. Playwright is a development dependency only. Install both client and server dependencies before running these tests.

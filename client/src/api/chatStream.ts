@@ -8,6 +8,7 @@ type StreamChatOptions = {
 export async function streamChat(message: string, options: StreamChatOptions): Promise<void> {
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
+    options.signal?.throwIfAborted()
     const apiUrl = import.meta.env?.VITE_API_URL ?? 'http://localhost:5000'
     const response = await fetch(`${apiUrl}/api/chat/stream`, {
       method: 'POST',
@@ -28,12 +29,14 @@ export async function streamChat(message: string, options: StreamChatOptions): P
 
     for (;;) {
       const { value, done } = await reader.read()
+      options.signal?.throwIfAborted()
       // Streaming decoding preserves characters split across network chunks.
       buffer += done ? decoder.decode() : decoder.decode(value, { stream: true })
       buffer = buffer.replace(/\r\n/g, '\n')
 
       let boundary = buffer.indexOf('\n\n')
       while (boundary !== -1) {
+        options.signal?.throwIfAborted()
         const event = buffer.slice(0, boundary)
         buffer = buffer.slice(boundary + 2)
         const data = event.split('\n')
@@ -70,7 +73,7 @@ export async function streamChat(message: string, options: StreamChatOptions): P
       if (done) throw new Error('The connection ended before the answer finished. Please try again.')
     }
   } catch (err) {
-    if (options.signal?.aborted) return
+    if (options.signal?.aborted || (err instanceof Error && err.name === 'AbortError')) return
     options.onError(err instanceof TypeError
       ? 'Unable to reach the server. Check your connection and make sure the server is running.'
       : err instanceof Error ? err.message : 'Something went wrong. Please try again.')

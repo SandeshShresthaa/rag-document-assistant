@@ -9,6 +9,9 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const controllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => () => controllerRef.current?.abort(), [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'nearest' })
@@ -16,7 +19,9 @@ function App() {
 
   async function sendMessage() {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || controllerRef.current) return
+    const controller = new AbortController()
+    controllerRef.current = controller
 
     setMessages((previous) => [
       ...previous,
@@ -29,18 +34,23 @@ function App() {
 
     try {
       await streamChat(text, {
+        signal: controller.signal,
         onToken: (token) => {
+          if (controller.signal.aborted) return
           setMessages((previous) => previous.map((message, index) =>
             index === previous.length - 1 && message.role === 'assistant'
               ? { ...message, text: message.text + token }
               : message,
           ))
         },
-        onDone: () => setLoading(false),
+        onDone: () => {}, // Cleanup below restores the controls for every outcome.
         onError: (message) => setError(message),
       })
     } finally {
-      setLoading(false)
+      if (controllerRef.current === controller) {
+        controllerRef.current = null
+        setLoading(false)
+      }
     }
   }
 
@@ -84,7 +94,13 @@ function App() {
               placeholder="Type a question..."
               disabled={loading}
             />
-            <button type="submit" disabled={loading || !input.trim()}>Send</button>
+            {loading ? (
+              <button type="button" className="stop-button" onClick={() => controllerRef.current?.abort()}>
+                Stop
+              </button>
+            ) : (
+              <button type="submit" disabled={!input.trim()}>Send</button>
+            )}
           </div>
         </form>
       </footer>

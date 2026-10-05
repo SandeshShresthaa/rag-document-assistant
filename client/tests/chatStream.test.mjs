@@ -88,3 +88,39 @@ test('delivers text before the stream closes', async (t) => {
   controller.close()
   await finished
 })
+
+test('abort before fetch is silent and makes no request', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => assert.fail('must not fetch'))
+  const controller = new AbortController()
+  controller.abort()
+  await streamChat('hello', {
+    signal: controller.signal, onToken: assert.fail, onDone: assert.fail, onError: assert.fail,
+  })
+})
+
+test('abort in a token callback prevents queued tokens and DONE', async (t) => {
+  const controller = new AbortController()
+  const response = sse(token('first') + token('late') + 'data: [DONE]\n\n')
+  t.mock.method(globalThis, 'fetch', async (_url, init) => {
+    assert.equal(init.signal, controller.signal)
+    return response
+  })
+  const tokens = []
+  await streamChat('hello', {
+    signal: controller.signal,
+    onToken: (text) => { tokens.push(text); controller.abort() },
+    onDone: assert.fail,
+    onError: assert.fail,
+  })
+  assert.deepEqual(tokens, ['first'])
+  assert.equal(response.body.locked, false)
+})
+
+test('AbortError while reading is a normal stop and releases the reader', async (t) => {
+  const response = new Response(new ReadableStream({
+    pull(controller) { controller.error(new DOMException('Stopped', 'AbortError')) },
+  }), { headers: { 'Content-Type': 'text/event-stream' } })
+  t.mock.method(globalThis, 'fetch', async () => response)
+  await streamChat('hello', { onToken: assert.fail, onDone: assert.fail, onError: assert.fail })
+  assert.equal(response.body.locked, false)
+})

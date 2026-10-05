@@ -167,9 +167,9 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 **Phase 1: Streaming chat**
 - [x] Task 1: Project setup + GitHub
 - [x] Task 2: First LLM call from backend
-- [ ] Task 2b: Retry + model fallback (deferred, do any time before Task 12)
-- [X] Task 3: Basic chat UI
-- [ ] Task 4: Streaming with SSE
+- [x] Task 2b: Retry + model fallback
+- [x] Task 3: Basic chat UI
+- [x] Task 4: Streaming with SSE
 
 **Phase 2: Documents and retrieval**
 - [ ] Task 5: PDF upload + text extraction
@@ -206,7 +206,7 @@ Lessons learned (keep in mind):
 
 ---
 
-## Task 2b: Retry + model fallback (deferred)
+## Task 2b: Retry + model fallback [DONE]
 
 **Goal:** Make the server survive temporary Gemini 503/429 errors.
 
@@ -214,7 +214,7 @@ Lessons learned (keep in mind):
 
 **Steps**
 1. Read `GEMINI_MODEL` and optional `GEMINI_FALLBACK_MODEL` from env (via `config.ts` or top of file).
-2. Write `generateWithRetry(message)`: for each model, try up to 3 times; only retry on status 503 or 429; wait 1s, 2s, 4s between attempts; throw other errors immediately.
+2. Use `generateWithRetry`: try each model up to 3 times total, with 1s and 2s waits between attempts; only retry 503/429. After exhaustion, try the optional fallback. A 404 skips directly to the fallback without retrying the missing model; other errors fail immediately. This resolves the original conflict between three attempts and three delays, and makes the missing-model acceptance check explicit.
 3. In the route's `catch`, return HTTP 503 with `{ error: "The AI model is busy. Please try again in a moment." }` for 503/429, else 500.
 
 **Write it yourself:** the retry loop.
@@ -222,7 +222,9 @@ Lessons learned (keep in mind):
 
 **Agent prompt:** "Review my `generateWithRetry` in server/src/index.ts. It should retry only on 503/429 with exponential backoff and then try a fallback model. Point out bugs; don't rewrite everything."
 
-**Done when:** you temporarily use a wrong first model name and the fallback still answers; a 503 produces the friendly JSON error.
+**Done when:** a simulated missing first model (404) falls back successfully; exhausted 429/503 failures produce the friendly JSON error.
+
+Validation: automated tests cover bounded backoff, fallback, permanent failures, cancellation during backoff, and JSON status mapping. A live JSON request exhausted busy retries and returned the expected friendly HTTP 503. `GEMINI_MODEL` is now read from the ignored server environment file; `GEMINI_FALLBACK_MODEL` remains optional. Stream setup uses the same retry helper; failures after tokens begin are reported without restarting the answer.
 **Commit:** `feat: add retry and model fallback for busy API errors`
 
 ---
@@ -272,7 +274,7 @@ Validation: client build and lint passed; the developer confirmed all four brows
 
 **Part 4a: Server**
 
-Implementation status: server SSE is implemented at `POST /api/chat/stream`; the existing JSON `/api/chat` remains available for the Task 3 client. Task 4b should use `/api/chat/stream`. Four automated tests cover progressive delivery, validation, upstream failures, and disconnect/recovery using mocked Gemini responses. Strict TypeScript checking passed. Live Gemini verification passed on 2026-10-05: three token events followed by [DONE].
+Implementation status: complete. The client uses `POST /api/chat/stream`; the original JSON `/api/chat` remains available. Server tests verify progressive delivery, validation, failures, and disconnect/recovery; strict TypeScript checking passes. Live Gemini streaming returned tokens and [DONE] on 2026-10-05, including a fresh check after Task 4c.
 
 1. Add a new streaming route (or change `/api/chat`): set headers
    `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, then `res.flushHeaders()`.
@@ -284,7 +286,7 @@ Implementation status: server SSE is implemented at `POST /api/chat/stream`; the
 
 **Part 4b: Client**
 
-Implementation status: `client/src/api/chatStream.ts` reads buffered SSE events from `/api/chat/stream`; App appends tokens to the last assistant message and scrolls as it grows. Build, lint, and 11 automated parser tests pass. Live helper attempts handled upstream error events correctly; successful browser streaming verification is pending. Task 4c has not been implemented.
+Implementation status: complete. `client/src/api/chatStream.ts` buffers SSE events and App appends tokens to one assistant message, scrolling as it grows. Client build/lint and 14 parser/cancellation tests pass. Browser tests confirm progressive rendering, loading, error recovery, and subsequent requests using the real SSE route with simulated model responses.
 1. Create `src/api/chatStream.ts` exporting `streamChat(message, { onToken, onDone, onError, signal })`.
 2. `fetch` with POST and `signal`. Get `res.body.getReader()` and a `TextDecoder`.
 3. Read chunks in a loop, append to a buffer, split by `\n\n`, parse lines starting with `data: `. Keep the incomplete last piece in the buffer (a network chunk can cut an event in half).
@@ -292,6 +294,8 @@ Implementation status: `client/src/api/chatStream.ts` reads buffered SSE events 
 5. In `App.tsx`: add an empty assistant message first, then append each token to the LAST message (immutable update).
 
 **Part 4c: Stop button**
+
+Implementation status: complete. A controller ref prevents duplicate requests and aborts on Stop or unmount. Aborts do not show errors; partial answers remain visible. Browser tests verify Stop before the first token, Stop during generation, server-side abort, and a successful subsequent message.
 1. Keep an `AbortController` in a `useRef`. Pass `signal` to fetch.
 2. "Stop" button calls `controller.abort()`. Treat `AbortError` as a normal stop (not an error message).
 3. Show Stop while streaming, Send otherwise.
@@ -302,10 +306,12 @@ Implementation status: `client/src/api/chatStream.ts` reads buffered SSE events 
 **Agent prompt:** "Implement Task 4a (server SSE streaming with generateContentStream) per ROADMAP.md. Explain each header and why we split events on a blank line. Do not use any streaming libraries."
 
 **Done when**
-- [ ] Text appears progressively in the UI
-- [ ] Stop halts the stream and the server stops generating
-- [ ] A mid-stream error shows a message and the UI recovers
-- [ ] Sending a second message after a stop works
+- [x] Text appears progressively in the UI
+- [x] Stop halts the stream and the server aborts its SDK request (remote generation cancellation is not guaranteed by the provider)
+- [x] A mid-stream error shows a message and the UI recovers
+- [x] Sending a second message after a stop works
+
+Validation (2026-10-05): 14 client tests, 11 server tests, and six Edge browser tests passed. Client build/lint, server typecheck, and Git diff checks passed. Browser tests use deterministic model responses; live Gemini streaming was checked separately.
 
 **Pitfalls:** missing `flushHeaders`; proxies buffering; forgetting the blank line (`\n\n`) between events; mutating state instead of copying; parsing a half-received event.
 **Commit:** `feat: stream chat responses with SSE and stop button`

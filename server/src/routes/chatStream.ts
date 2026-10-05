@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import type { Models } from "@google/genai";
+import { busyMessage, isBusyError } from "../services/generateWithRetry.js";
 
 // Passing the SDK function in lets us test streaming without API calls.
 export function createChatStreamHandler(
@@ -45,12 +46,12 @@ export function createChatStreamHandler(
           res.write(`data: ${JSON.stringify({ type: "token", text })}\n\n`);
         }
       }
-    } catch {
+    } catch (error) {
       if (!controller.signal.aborted && !res.destroyed) {
         // Headers are already sent: report failure inside the stream.
         res.write(`data: ${JSON.stringify({
           type: "error",
-          message: "Unable to finish the answer. Please try again.",
+          message: isBusyError(error) ? busyMessage : "Unable to finish the answer. Please try again.",
         })}\n\n`);
       }
     } finally {
