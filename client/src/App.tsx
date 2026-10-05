@@ -1,21 +1,55 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
 import './App.css'
 
 function App() {
-  // Static placeholders: replace these with your state declarations.
-  const messages: Message[] = []
-  const input: string = ''
-  const loading: boolean = false
-  const error: string = ''
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'nearest' })
   }, [messages.length, loading])
 
-  function sendMessage() {
-    // TODO: Implement message sending and state updates yourself.
+  async function sendMessage() {
+    const text = input.trim()
+    if (!text || loading) return
+
+    setMessages((previous) => [...previous, { role: 'user', text }])
+    setInput('')
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Unable to get an answer. Please try again.')
+      }
+
+      const data: unknown = await response.json()
+      if (
+        typeof data !== 'object' || data === null ||
+        !('reply' in data) || typeof data.reply !== 'string' || !data.reply.trim()
+      ) {
+        throw new Error('The server returned an empty or invalid answer. Please try again.')
+      }
+
+      const reply = data.reply
+      setMessages((previous) => [...previous, { role: 'assistant', text: reply }])
+    } catch (err) {
+      setError(err instanceof TypeError
+        ? 'Unable to reach the server. Check your connection and make sure the server is running.'
+        : err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -49,16 +83,16 @@ function App() {
         }}>
           <label htmlFor="message-input">Your message</label>
           <div className="composer-row">
-            {/* TODO: Replace defaultValue with value={input} and add onChange using your setter. */}
             <input
               id="message-input"
               name="message"
               type="text"
-              defaultValue={input}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
               placeholder="Type a question..."
               disabled={loading}
             />
-            <button type="submit" disabled={loading}>Send</button>
+            <button type="submit" disabled={loading || !input.trim()}>Send</button>
           </div>
         </form>
       </footer>
