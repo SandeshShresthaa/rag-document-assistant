@@ -2,12 +2,18 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { GoogleGenAI } from "@google/genai";
+import { createChatStreamHandler } from "./routes/chatStream.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+app.post("/api/chat/stream", createChatStreamHandler(
+  (params) => ai.models.generateContentStream(params),
+  process.env.GEMINI_MODEL || "gemini-3.8-flash",
+));
 
 app.post("/api/chat", async (req, res) => {
   try {

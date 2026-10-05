@@ -168,7 +168,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 1: Project setup + GitHub
 - [x] Task 2: First LLM call from backend
 - [ ] Task 2b: Retry + model fallback (deferred, do any time before Task 12)
-- [ ] Task 3: Basic chat UI
+- [X] Task 3: Basic chat UI
 - [ ] Task 4: Streaming with SSE
 
 **Phase 2: Documents and retrieval**
@@ -248,10 +248,12 @@ Lessons learned (keep in mind):
 **Agent prompt:** "Implement Task 3 from ROADMAP.md in client/src. Basic chat UI, React + TypeScript, calls POST /api/chat, shows loading and error states, no streaming yet. Don't add libraries."
 
 **Done when**
-- [ ] Typing a question and pressing Enter shows the answer
-- [ ] "Thinking..." appears while waiting
-- [ ] Stopping the server and sending shows a friendly error (no crash)
-- [ ] Empty messages cannot be sent
+- [x] Typing a question and pressing Enter shows the answer
+- [x] "Thinking..." appears while waiting
+- [x] Stopping the server and sending shows a friendly error (no crash)
+- [x] Empty messages cannot be sent
+
+Validation: client build and lint passed; the developer confirmed all four browser checks on 2026-10-05.
 
 **Pitfalls:** CORS errors (server must call `cors()`); forgetting to run both servers; `VITE_` prefix required for client env vars (restart Vite after editing `.env`).
 **Commit:** `feat: add basic chat UI`
@@ -269,13 +271,16 @@ Lessons learned (keep in mind):
 - Browser `EventSource` only supports GET, so for a POST with a body we use `fetch` and read `response.body` manually.
 
 **Part 4a: Server**
+
+Implementation status: server SSE is implemented at `POST /api/chat/stream`; the existing JSON `/api/chat` remains available for the Task 3 client. Task 4b should use `/api/chat/stream`. Four automated tests cover progressive delivery, validation, upstream failures, and disconnect/recovery using mocked Gemini responses. Strict TypeScript checking passed. Live Gemini streaming verification remains pending.
+
 1. Add a new streaming route (or change `/api/chat`): set headers
    `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, then `res.flushHeaders()`.
 2. Call `ai.models.generateContentStream({ model, contents })` and loop `for await (const chunk of stream)`.
 3. For each chunk with text: `res.write(`data: ${JSON.stringify({ type: "token", text })}\n\n`)`.
 4. After the loop: `res.write("data: [DONE]\n\n"); res.end()`.
 5. On error after headers are sent: write `{ type: "error", message }` then end. (You cannot change the status code after streaming starts.)
-6. Listen to `req.on("close", ...)` and stop work if the client disconnected.
+6. Listen to `res.on("close", ...)` and abort the SDK request if the response has not ended. Request `close` can mean the POST body completed normally. Pass the abort signal through Gemini's config; aborting stops local consumption but does not guarantee cancellation of generation at Google's service.
 
 **Part 4b: Client**
 1. Create `src/api/chatStream.ts` exporting `streamChat(message, { onToken, onDone, onError, signal })`.
