@@ -272,7 +272,7 @@ Validation: client build and lint passed; the developer confirmed all four brows
 
 **Part 4a: Server**
 
-Implementation status: server SSE is implemented at `POST /api/chat/stream`; the existing JSON `/api/chat` remains available for the Task 3 client. Task 4b should use `/api/chat/stream`. Four automated tests cover progressive delivery, validation, upstream failures, and disconnect/recovery using mocked Gemini responses. Strict TypeScript checking passed. Live Gemini streaming verification remains pending.
+Implementation status: server SSE is implemented at `POST /api/chat/stream`; the existing JSON `/api/chat` remains available for the Task 3 client. Task 4b should use `/api/chat/stream`. Four automated tests cover progressive delivery, validation, upstream failures, and disconnect/recovery using mocked Gemini responses. Strict TypeScript checking passed. Live Gemini verification passed on 2026-10-05: three token events followed by [DONE].
 
 1. Add a new streaming route (or change `/api/chat`): set headers
    `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, then `res.flushHeaders()`.
@@ -283,6 +283,8 @@ Implementation status: server SSE is implemented at `POST /api/chat/stream`; the
 6. Listen to `res.on("close", ...)` and abort the SDK request if the response has not ended. Request `close` can mean the POST body completed normally. Pass the abort signal through Gemini's config; aborting stops local consumption but does not guarantee cancellation of generation at Google's service.
 
 **Part 4b: Client**
+
+Implementation status: `client/src/api/chatStream.ts` reads buffered SSE events from `/api/chat/stream`; App appends tokens to the last assistant message and scrolls as it grows. Build, lint, and 11 automated parser tests pass. Live helper attempts handled upstream error events correctly; successful browser streaming verification is pending. Task 4c has not been implemented.
 1. Create `src/api/chatStream.ts` exporting `streamChat(message, { onToken, onDone, onError, signal })`.
 2. `fetch` with POST and `signal`. Get `res.body.getReader()` and a `TextDecoder`.
 3. Read chunks in a loop, append to a buffer, split by `\n\n`, parse lines starting with `data: `. Keep the incomplete last piece in the buffer (a network chunk can cut an event in half).

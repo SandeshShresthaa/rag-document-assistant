@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
+import { streamChat } from './api/chatStream'
 import './App.css'
 
 function App() {
@@ -11,42 +12,33 @@ function App() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: 'nearest' })
-  }, [messages.length, loading])
+  }, [messages, loading])
 
   async function sendMessage() {
     const text = input.trim()
     if (!text || loading) return
 
-    setMessages((previous) => [...previous, { role: 'user', text }])
+    setMessages((previous) => [
+      ...previous,
+      { role: 'user', text },
+      { role: 'assistant', text: '' },
+    ])
     setInput('')
     setError('')
     setLoading(true)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+      await streamChat(text, {
+        onToken: (token) => {
+          setMessages((previous) => previous.map((message, index) =>
+            index === previous.length - 1 && message.role === 'assistant'
+              ? { ...message, text: message.text + token }
+              : message,
+          ))
+        },
+        onDone: () => setLoading(false),
+        onError: (message) => setError(message),
       })
-
-      if (!response.ok) {
-        throw new Error('Unable to get an answer. Please try again.')
-      }
-
-      const data: unknown = await response.json()
-      if (
-        typeof data !== 'object' || data === null ||
-        !('reply' in data) || typeof data.reply !== 'string' || !data.reply.trim()
-      ) {
-        throw new Error('The server returned an empty or invalid answer. Please try again.')
-      }
-
-      const reply = data.reply
-      setMessages((previous) => [...previous, { role: 'assistant', text: reply }])
-    } catch (err) {
-      setError(err instanceof TypeError
-        ? 'Unable to reach the server. Check your connection and make sure the server is running.'
-        : err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -63,13 +55,13 @@ function App() {
         {messages.length === 0 && (
           <p className="empty-state">Your conversation will appear here.</p>
         )}
-        {messages.map((message, index) => (
+        {messages.map((message, index) => message.text && (
           <article className={`message message-${message.role}`} key={index}>
             <span className="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
             <p>{message.text}</p>
           </article>
         ))}
-        {loading && (
+        {loading && !messages.at(-1)?.text && (
           <div className="message message-assistant thinking" role="status">Thinking...</div>
         )}
         <div ref={messagesEndRef} />

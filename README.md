@@ -1,11 +1,11 @@
-﻿# rag-document-assistant
+# rag-document-assistant
 
 
 A learning project building a document question-answering app with React, TypeScript, Express, and Gemini.
 
 ## Status
 
-Tasks 1-3 are complete: non-streaming chat with loading and error handling. Task 4a adds server streaming with automated mock tests; live verification is pending. Tasks 4b (client streaming) and 4c (Stop button) remain. Task 2b (retry and fallback) is deferred until before Task 12. PDF retrieval and citations are planned in [ROADMAP.md](ROADMAP.md).
+Tasks 1-3 are complete: non-streaming chat with loading and error handling. Task 4a passed a live streaming check. Task 4b implements client streaming and passes automated checks; successful browser streaming verification remains pending after live helper requests encountered upstream failures. Task 4c (Stop button) remains. Task 2b (retry and fallback) is deferred until before Task 12. PDF retrieval and citations are planned in [ROADMAP.md](ROADMAP.md).
 
 ## Local setup
 
@@ -48,7 +48,7 @@ Follow the roadmap's $0 budget, typed code without `any`, and dependency rules. 
 
 ## Task 4a: server streaming
 
-`POST /api/chat/stream` accepts `{ "message": "..." }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The current client still uses the JSON `/api/chat` endpoint; connect it to streaming in Task 4b.
+`POST /api/chat/stream` accepts `{ "message": "..." }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The client now uses `/api/chat/stream`. The original JSON endpoint remains available.
 
 The streaming route uses `GEMINI_MODEL` from `server/.env` when set, otherwise the existing server model name. No retry or fallback-model logic has been added. To test against Gemini, start the server, then run in PowerShell:
 
@@ -61,3 +61,9 @@ Expect `data: {"type":"token","text":"..."}` events separated by blank lines, fo
 The handler lives in `server/src/routes/chatStream.ts`. It sets `Content-Type: text/event-stream` to identify the format, `Cache-Control: no-cache` to prevent cached reuse without validation, and `Connection: keep-alive` for the HTTP/1.1 connection. `X-Accel-Buffering: no` asks compatible proxies not to buffer. `flushHeaders()` sends the headers before waiting for Gemini. Each event ends with a blank line (`\n\n`); network chunks do not necessarily align with events.
 
 Disconnecting aborts the local SDK request. This does not guarantee that Google's service stops generating or accounting for usage. Automated tests exercise this behavior with simulated responses and do not call Gemini.
+
+## Task 4b: client streaming
+
+`client/src/api/chatStream.ts` sends the question and reads SSE with a TextDecoder and an incomplete-event buffer. App adds an empty assistant message, appends tokens immutably, and restores the controls after success or failure. Partial answers remain visible on errors. The Stop button is deferred to Task 4c.
+
+Run `npm test` in `client/` using Node 22.6+ (verified with Node 24.15.0). Tests cover fragmented UTF-8, event boundaries, completion, and failure handling without external API calls. Also run `npm run build` and `npm run lint`. With both servers running, submit a longer question and verify progressive text, scrolling, and another successful submission. Browser verification remains pending; the live helper has verified handling of the server error event.
