@@ -173,7 +173,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 
 **Phase 2: Documents and retrieval**
 - [x] Task 5: PDF upload + text extraction
-- [ ] Task 6: Chunking
+- [x] Task 6: Chunking
 - [ ] Task 7: Embeddings + MongoDB storage
 - [ ] Task 8: Vector search
 - [ ] Task 9: Connect retrieval to chat (RAG)
@@ -352,7 +352,7 @@ Agent-run validation (2026-10-06): 14 server tests and 14 client tests passed; a
 
 ---
 
-## Task 6: Chunking
+## Task 6: Chunking [DONE]
 
 **Goal:** Turn page text into small overlapping chunks that keep their page number.
 
@@ -369,9 +369,13 @@ Agent-run validation (2026-10-06): 14 server tests and 14 client tests passed; a
 **Agent can do this:** write the tests, suggest improvements.
 
 **Done when:**
-- [ ] A real PDF becomes a list of chunks, each with page and index
-- [ ] Neighboring chunks share ~overlap characters
-- [ ] No chunk is empty
+- [x] A real PDF becomes a list of chunks, each with page and index
+- [x] Neighboring chunks share ~overlap characters
+- [x] No chunk is empty
+
+Implementation: `services/chunker.ts` exports `chunkPages` with defaults of 800 characters and 150 characters of overlap (characters, not tokens). Whitespace is normalized while blank-line paragraph boundaries are retained. For non-final chunks, the latest sentence/paragraph boundary in the latter half of the window is preferred, provided it advances beyond the overlap; otherwise the split is by character count. Each page is processed independently, with original page numbers and zero-based indexes across the document. Chunks shorter than 30 characters are skipped, including tiny tails; trimming can slightly reduce the shared whitespace at a boundary. Invalid size/overlap settings throw immediately. The upload route logs the total count and up to two sample chunks. The `{ name, pages }` response is unchanged; storage and embeddings remain Task 7.
+
+Agent-run validation (2026-10-06): all 21 server tests, server typecheck, and all 12 Edge browser tests passed. Seven chunker tests cover short/long/empty input, whitespace, overlap and coverage, natural boundaries, page separation/indexes, tiny tails, and invalid options. The multipart route test parses an actual generated two-page PDF and verifies the logged chunks. Client source was unchanged, so client unit/build/lint checks were not rerun for Task 6 (they passed for Task 5). Developer manual acceptance has not been claimed. Task 7 is next.
 
 **Commit:** `feat: add text chunking with overlap`
 

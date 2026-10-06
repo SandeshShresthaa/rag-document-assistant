@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { extractPages, PdfValidationError } from "../services/pdf.js";
+import { chunkPages } from "../services/chunker.js";
 
 export const MAX_PDF_BYTES = 5 * 1024 * 1024;
 
@@ -36,8 +37,10 @@ documentsRouter.post("/", (req, res, next) => {
   }
   try {
     const pages = await extractPages(req.file.buffer);
-    // Temporary Task 5 preview; no file or extracted text is persisted.
+    const chunks = chunkPages(pages);
+    // Temporary learning previews; no file, text, or chunks are persisted.
     console.log("PDF extraction:", { pages: pages.length, preview: pages[0]?.text.slice(0, 200) ?? "" });
+    console.log("PDF chunks:", { count: chunks.length, samples: chunks.slice(0, 2) });
     res.json({ name: req.file.originalname, pages: pages.length });
   } catch (error) {
     res.status(error instanceof PdfValidationError ? 400 : 500).json({

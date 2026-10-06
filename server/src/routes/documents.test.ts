@@ -16,7 +16,7 @@ test("real multipart uploads extract PDFs and return JSON validation errors", as
   t.mock.method(console, "log", (...args: unknown[]) => logs.push(args));
   try {
     const cases = [
-      { data: makePdf(["Hello page one", "Hello page two"]), type: "application/pdf", status: 200 },
+      { data: makePdf(["First page has enough text for a useful chunk.", "Second page has text for another chunk."]), type: "application/pdf", status: 200 },
       { data: Buffer.from("hello"), type: "text/plain", status: 400, error: /Only PDF/ },
       { data: Buffer.from("fake"), type: "application/pdf", status: 400, error: /not a valid PDF/ },
       { data: Buffer.alloc(MAX_PDF_BYTES + 1), type: "application/pdf", status: 400, error: /5 MB/ },
@@ -34,7 +34,13 @@ test("real multipart uploads extract PDFs and return JSON validation errors", as
       if (item.error) assert.match(result.error, item.error);
       else assert.deepEqual(result, { name: "sample.pdf", pages: 2 });
     }
-    assert.deepEqual(logs, [["PDF extraction:", { pages: 2, preview: "Hello page one" }]]);
+    assert.deepEqual(logs, [
+      ["PDF extraction:", { pages: 2, preview: "First page has enough text for a useful chunk." }],
+      ["PDF chunks:", { count: 2, samples: [
+        { page: 1, chunkIndex: 0, text: "First page has enough text for a useful chunk." },
+        { page: 2, chunkIndex: 1, text: "Second page has text for another chunk." },
+      ] }],
+    ]);
   } finally {
     const closed = once(server, "close");
     server.close();
