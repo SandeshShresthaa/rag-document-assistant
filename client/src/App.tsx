@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
 import { streamChat } from './api/chatStream'
+import { UploadBox } from './components/UploadBox'
 import './App.css'
 
 function App() {
@@ -60,6 +61,7 @@ function App() {
         <h1>Document Assistant</h1>
         <p>Ask a question to start a conversation.</p>
       </header>
+      <UploadBox />
 
       <section className="message-list" role="log" aria-label="Conversation" aria-live="polite">
         {messages.length === 0 && (

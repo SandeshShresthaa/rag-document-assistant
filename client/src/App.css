@@ -51,6 +51,14 @@
   background: #1d4ed8;
 }
 .composer button:hover:not(:disabled) { background: #1e40af; }
+.upload-box { padding: 16px 24px; border-bottom: 1px solid #e2e8f0; }
+.upload-box label { font-weight: 600; }
+.upload-box p { margin: 8px 0; font-size: 14px; overflow-wrap: anywhere; }
+#upload-help { color: #64748b; }
+.upload-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.upload-row input { flex: 1; min-width: 0; max-width: 100%; }
+.upload-row button { padding: 10px 16px; border: 0; border-radius: 8px; background: #1d4ed8; color: white; }
+.upload-row button:hover:not(:disabled) { background: #1e40af; }
 .composer .stop-button { background: #b91c1c; }
 .composer .stop-button:hover { background: #991b1b; }
 @media (max-width: 480px) {

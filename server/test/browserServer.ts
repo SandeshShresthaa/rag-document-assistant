@@ -4,10 +4,12 @@ import cors from "cors";
 import { setTimeout as delay } from "node:timers/promises";
 import { GenerateContentResponse } from "@google/genai";
 import { createChatStreamHandler } from "../src/routes/chatStream.js";
+import { documentsRouter } from "../src/routes/documents.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/documents", documentsRouter);
 let aborted = 0;
 let started = 0;
 app.get("/test-state", (_req, res) => { res.json({ aborted, started }); });

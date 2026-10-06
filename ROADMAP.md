@@ -172,7 +172,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 4: Streaming with SSE
 
 **Phase 2: Documents and retrieval**
-- [ ] Task 5: PDF upload + text extraction
+- [x] Task 5: PDF upload + text extraction
 - [ ] Task 6: Chunking
 - [ ] Task 7: Embeddings + MongoDB storage
 - [ ] Task 8: Vector search
@@ -320,7 +320,7 @@ Validation (2026-10-05): 14 client tests, 11 server tests, and six Edge browser 
 
 # PHASE 2: Documents and retrieval
 
-## Task 5: PDF upload + text extraction
+## Task 5: PDF upload + text extraction [DONE]
 
 **Goal:** Upload a PDF and extract text per page on the server.
 
@@ -340,9 +340,13 @@ Validation (2026-10-05): 14 client tests, 11 server tests, and six Edge browser 
 **Agent prompt:** "Implement Task 5 per ROADMAP.md: PDF upload with multer (memory storage, 5MB, pdf only) and a services/pdf.ts extractPages function returning text per page. Log results; do not touch the database yet."
 
 **Done when**
-- [ ] Uploading a text PDF logs correct text and page count
-- [ ] A non-PDF or >5MB file returns a clear 400 error shown in the UI
-- [ ] A scanned (image-only) PDF returns an "no text found" message instead of crashing
+- [x] Uploading a text PDF logs correct text and page count
+- [x] A non-PDF or >5MB file returns a clear 400 error shown in the UI
+- [x] A scanned (image-only) PDF returns an "no text found" message instead of crashing
+
+Implementation: `multer` receives one PDF in memory with a 5 MB limit. `pdf-parse` extracts typed `{ page, text }` results and releases parser resources in `finally`. The route checks MIME type and PDF content, reports invalid/corrupted or image-only files clearly, logs the page count and first 200 characters of page 1, and returns `{ name, pages }`. UploadBox displays progress, success, and server/network errors. Files are not persisted or used by chat yet; no OCR or database work is included.
+
+Agent-run validation (2026-10-06): 14 server tests and 14 client tests passed; all 12 Edge browser checks passed, including six new upload checks through the real document route/parser. Generated real PDF fixtures cover text on multiple pages, mixed image/text pages, and image-only pages. Route tests verify the logged preview and HTTP 400 responses. Client build/lint, server typecheck, and Git diff checks passed. These are automated agent checks; developer manual acceptance has not been claimed. Task 6 is next.
 
 **Commit:** `feat: add PDF upload and per-page text extraction`
 
