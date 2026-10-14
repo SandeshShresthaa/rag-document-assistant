@@ -174,7 +174,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 **Phase 2: Documents and retrieval**
 - [x] Task 5: PDF upload + text extraction
 - [x] Task 6: Chunking
-- [ ] Task 7: Embeddings + MongoDB storage
+- [x] Task 7: Embeddings + MongoDB storage
 - [ ] Task 8: Vector search
 - [ ] Task 9: Connect retrieval to chat (RAG)
 
@@ -383,6 +383,8 @@ Agent-run validation (2026-10-06): all 21 server tests, server typecheck, and al
 
 ## Task 7: Embeddings + MongoDB storage
 
+Implementation status: complete. Uploads require an anonymous UUID session, embed chunks in batches of 20 with bounded 429/503 retry and a short inter-batch delay, validate vector counts/dimensions, and store one document plus its chunks through a reused MongoDB client. Automated tests use controlled embedding/database substitutes. Live acceptance on 2026-10-14 stored one document and two chunks in the `ragdocs` Atlas database, read them back with matching session metadata, and verified both embeddings contain 768 values. A separate live Gemini check also returned one 768-dimensional vector using `gemini-embedding-001`.
+
 **Goal:** Create an embedding for every chunk and store everything in Atlas.
 
 **You will learn:** what embeddings are (text as a vector of numbers where similar meaning means close vectors), batching, MongoDB driver basics.
@@ -399,9 +401,9 @@ Agent-run validation (2026-10-06): all 21 server tests, server typecheck, and al
 **Agent can do this:** Mongo connection boilerplate, `useSessionId` hook.
 
 **Done when**
-- [ ] After upload, `documents` has 1 record and `chunks` has N records with embeddings
-- [ ] Every embedding has the same length (matches `EMBEDDING_DIMENSIONS`)
-- [ ] Uploading a large PDF does not crash on rate limits (retries or clear error)
+- [x] After upload, `documents` has 1 record and `chunks` has N records with embeddings
+- [x] Every embedding has the same length (matches `EMBEDDING_DIMENSIONS`)
+- [x] Uploading a large PDF does not crash on rate limits (retries or clear error)
 
 **Pitfalls:** never commit the connection string; do not open a new Mongo connection per request; mismatched vector length breaks Task 8.
 **Commit:** `feat: embed chunks and store them in MongoDB`

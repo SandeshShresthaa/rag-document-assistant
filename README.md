@@ -5,12 +5,12 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1, 2, 2b, 3, and 4 are complete: streaming chat with Stop, loading/error recovery, and retry/model fallback. Task 5 (PDF upload) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 7 are complete. PDFs are extracted, chunked, embedded with Gemini, and stored in MongoDB under an anonymous browser session. Live Gemini and Atlas persistence are verified. Task 8 (vector search) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 
 1. Run `npm ci` separately in `client/` and `server/`.
-2. Create `server/.env` with `PORT=5000`, `GEMINI_API_KEY=your_key_here`, and `GEMINI_MODEL=<your available Gemini model>` on separate lines. Optionally set `GEMINI_FALLBACK_MODEL` to another available model.
+2. Copy `server/.env.example` to `server/.env`. Set `GEMINI_API_KEY`, the generation model, `GEMINI_EMBEDDING_MODEL`, and your Atlas `MONGODB_URI`. Keep `EMBEDDING_DIMENSIONS=768` and `MONGODB_DB=ragdocs` unless you intentionally configure different values.
 3. Create `client/.env` with `VITE_API_URL=http://localhost:5000`.
 4. In separate terminals, run `npm run dev` in `server/` and `client/`.
 5. Open the URL printed by Vite, usually http://localhost:5173. Restart Vite after changing its environment file.
@@ -19,7 +19,7 @@ On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`. Both `.env` files are 
 
 ## Code organization
 
-`client/src/App.tsx` contains chat layout/state and calls `api/chatStream.ts`; `types/chat.ts` defines messages. On the server, `index.ts` wires Express and Gemini to `routes/chat.ts` and `routes/chatStream.ts`. `services/generateWithRetry.ts` provides bounded retry and optional model fallback.
+`client/src/App.tsx` contains chat layout/state and calls `api/chatStream.ts`; `hooks/useSessionId.ts` keeps one anonymous UUID in local storage. On the server, `index.ts` wires Express and Gemini to the routes. `services/embeddings.ts` batches document embeddings, `db/mongo.ts` reuses one MongoDB client, and `db/documents.ts` stores document and chunk records.
 
 Create modules as features need them, following roadmap Part 2:
 

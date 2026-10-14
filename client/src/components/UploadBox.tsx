@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { uploadDocument } from '../api/uploadDocument'
+import { useSessionId } from '../hooks/useSessionId'
 
 export function UploadBox() {
+  const sessionId = useSessionId()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState('')
@@ -17,8 +19,8 @@ export function UploadBox() {
     setError('')
     setStatus('Uploading and extracting text...')
     try {
-      const result = await uploadDocument(file, controller.signal)
-      setStatus(`Extracted text from ${result.name} (${result.pages} ${result.pages === 1 ? 'page' : 'pages'}).`)
+      const result = await uploadDocument(file, sessionId, controller.signal)
+      setStatus(`Saved ${result.name}: ${result.pages} ${result.pages === 1 ? 'page' : 'pages'}, ${result.chunks} ${result.chunks === 1 ? 'chunk' : 'chunks'}.`)
     } catch (error) {
       if (!controller.signal.aborted) {
         setStatus('')
@@ -33,7 +35,7 @@ export function UploadBox() {
   return (
     <form className="upload-box" onSubmit={(event) => { event.preventDefault(); void upload() }}>
       <label htmlFor="pdf-upload">Upload a PDF</label>
-      <p id="upload-help">Up to 5 MB. Text extraction only; documents are not saved or used in chat yet.</p>
+      <p id="upload-help">Up to 5 MB. The document is extracted, embedded, and saved for this browser session.</p>
       <div className="upload-row">
         <input id="pdf-upload" type="file" accept=".pdf,application/pdf" aria-describedby="upload-help"
           disabled={uploading} onChange={(event) => {

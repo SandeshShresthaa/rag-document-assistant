@@ -4,12 +4,15 @@ import cors from "cors";
 import { setTimeout as delay } from "node:timers/promises";
 import { GenerateContentResponse } from "@google/genai";
 import { createChatStreamHandler } from "../src/routes/chatStream.js";
-import { documentsRouter } from "../src/routes/documents.js";
+import { createDocumentsRouter } from "../src/routes/documents.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use("/api/documents", documentsRouter);
+app.use("/api/documents", createDocumentsRouter({
+  embed: async (texts) => texts.map(() => [0.1, 0.2, 0.3]),
+  store: async () => "507f1f77bcf86cd799439011",
+}));
 let aborted = 0;
 let started = 0;
 app.get("/test-state", (_req, res) => { res.json({ aborted, started }); });

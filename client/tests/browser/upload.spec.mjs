@@ -5,9 +5,12 @@ test.beforeEach(async ({ page }) => { await page.goto('/') })
 
 test('uploads a real two-page PDF and shows success', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Upload', exact: true })).toBeDisabled()
-  await page.getByLabel('Upload a PDF').setInputFiles({ name: 'sample.pdf', mimeType: 'application/pdf', buffer: makePdf(['First page', 'Second page']) })
+  await page.getByLabel('Upload a PDF').setInputFiles({
+    name: 'sample.pdf', mimeType: 'application/pdf',
+    buffer: makePdf(['First page contains enough searchable text for a chunk.', 'Second page also contains enough searchable text for a chunk.']),
+  })
   await page.getByRole('button', { name: 'Upload', exact: true }).click()
-  await expect(page.getByRole('status')).toHaveText('Extracted text from sample.pdf (2 pages).')
+  await expect(page.getByRole('status')).toHaveText('Saved sample.pdf: 2 pages, 2 chunks.')
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
@@ -22,9 +25,11 @@ for (const [name, mimeType, buffer, message] of [
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText(message)
     await expect(page.getByLabel('Upload a PDF')).toBeEnabled()
-    await page.getByLabel('Upload a PDF').setInputFiles({ name: 'valid.pdf', mimeType: 'application/pdf', buffer: makePdf(['Recovery']) })
+    await page.getByLabel('Upload a PDF').setInputFiles({
+      name: 'valid.pdf', mimeType: 'application/pdf', buffer: makePdf(['Recovery PDF contains enough searchable text for a chunk.']),
+    })
     await page.getByRole('button', { name: 'Upload', exact: true }).click()
-    await expect(page.getByRole('status')).toHaveText('Extracted text from valid.pdf (1 page).')
+    await expect(page.getByRole('status')).toHaveText('Saved valid.pdf: 1 page, 1 chunk.')
     await expect(page.getByRole('alert')).toHaveCount(0)
   })
 }
