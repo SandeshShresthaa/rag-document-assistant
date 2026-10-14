@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
 import { streamChat } from './api/chatStream'
 import { UploadBox } from './components/UploadBox'
+import { useSessionId } from './hooks/useSessionId'
 import './App.css'
 
 function App() {
+  const sessionId = useSessionId()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,7 +36,7 @@ function App() {
     setLoading(true)
 
     try {
-      await streamChat(text, {
+      await streamChat(text, sessionId, {
         signal: controller.signal,
         onToken: (token) => {
           if (controller.signal.aborted) return

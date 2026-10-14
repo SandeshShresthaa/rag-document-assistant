@@ -4,17 +4,18 @@ import { streamChat } from '../src/api/chatStream.ts'
 
 const encoder = new TextEncoder()
 const token = (text) => `data: ${JSON.stringify({ type: 'token', text })}\n\n`
+const sessionId = '123e4567-e89b-42d3-a456-426614174000'
 
 async function run(t, response) {
   t.mock.method(globalThis, 'fetch', async (url, init) => {
-    assert.equal(url, 'http://localhost:5000/api/chat/stream')
+    assert.equal(url, 'http://localhost:5000/api/chat')
     assert.equal(init.method, 'POST')
-    assert.deepEqual(JSON.parse(init.body), { message: 'hello' })
+    assert.deepEqual(JSON.parse(init.body), { message: 'hello', sessionId })
     if (response instanceof Error) throw response
     return response
   })
   const result = { tokens: [], errors: [], done: 0 }
-  await streamChat('hello', {
+  await streamChat('hello', sessionId, {
     onToken: (text) => result.tokens.push(text),
     onDone: () => result.done++,
     onError: (message) => result.errors.push(message),
@@ -77,7 +78,7 @@ test('delivers text before the stream closes', async (t) => {
   }))
   let received
   const firstToken = new Promise((resolve) => { received = resolve })
-  const finished = streamChat('hello', {
+  const finished = streamChat('hello', sessionId, {
     onToken: received,
     onDone: () => {},
     onError: assert.fail,
@@ -93,7 +94,7 @@ test('abort before fetch is silent and makes no request', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => assert.fail('must not fetch'))
   const controller = new AbortController()
   controller.abort()
-  await streamChat('hello', {
+  await streamChat('hello', sessionId, {
     signal: controller.signal, onToken: assert.fail, onDone: assert.fail, onError: assert.fail,
   })
 })
@@ -106,7 +107,7 @@ test('abort in a token callback prevents queued tokens and DONE', async (t) => {
     return response
   })
   const tokens = []
-  await streamChat('hello', {
+  await streamChat('hello', sessionId, {
     signal: controller.signal,
     onToken: (text) => { tokens.push(text); controller.abort() },
     onDone: assert.fail,
@@ -121,6 +122,6 @@ test('AbortError while reading is a normal stop and releases the reader', async 
     pull(controller) { controller.error(new DOMException('Stopped', 'AbortError')) },
   }), { headers: { 'Content-Type': 'text/event-stream' } })
   t.mock.method(globalThis, 'fetch', async () => response)
-  await streamChat('hello', { onToken: assert.fail, onDone: assert.fail, onError: assert.fail })
+  await streamChat('hello', sessionId, { onToken: assert.fail, onDone: assert.fail, onError: assert.fail })
   assert.equal(response.body.locked, false)
 })

@@ -2,8 +2,7 @@
 import express from "express";
 import cors from "cors";
 import { setTimeout as delay } from "node:timers/promises";
-import { GenerateContentResponse } from "@google/genai";
-import { createChatStreamHandler } from "../src/routes/chatStream.js";
+import { createChatHandler } from "../src/routes/chat.js";
 import { createDocumentsRouter } from "../src/routes/documents.js";
 
 const app = express();
@@ -16,24 +15,26 @@ app.use("/api/documents", createDocumentsRouter({
 let aborted = 0;
 let started = 0;
 app.get("/test-state", (_req, res) => { res.json({ aborted, started }); });
-app.post("/api/chat/stream", createChatStreamHandler(async (params) => {
-  started++;
-  return (async function* () {
-    const signal = params.config?.abortSignal;
+app.post("/api/chat", createChatHandler({
+  retrieve: async () => [{
+    documentId: "507f1f77bcf86cd799439011", documentName: "test.pdf", page: 1,
+    chunkIndex: 0, text: "Test browser context.", score: 0.9,
+  }],
+  answer: async (prompt, signal) => {
+    started++;
+    const question = prompt.match(/Question: ([\s\S]*)$/)?.[1] ?? "";
+    return (async function* () {
     try {
-      await delay(params.contents === "delayed" ? 10000 : 300, undefined, { signal });
-      const first = new GenerateContentResponse();
-      first.candidates = [{ content: { parts: [{ text: "First chunk." }] } }];
-      yield first;
-      await delay(params.contents === "slow" ? 10000 : 800, undefined, { signal });
-      if (params.contents === "error") throw new Error("simulated failure");
-      const second = new GenerateContentResponse();
-      second.candidates = [{ content: { parts: [{ text: " Final chunk." }] } }];
-      yield second;
+      await delay(question === "delayed" ? 10000 : 300, undefined, { signal });
+      yield { text: "First chunk." };
+      await delay(question === "slow" ? 10000 : 800, undefined, { signal });
+      if (question === "error") throw new Error("simulated failure");
+      yield { text: " Final chunk." };
     } catch (error) {
       if (signal?.aborted) aborted++;
       throw error;
     }
-  })();
-}, "test-model"));
+    })();
+  },
+}));
 app.listen(5051, "127.0.0.1");

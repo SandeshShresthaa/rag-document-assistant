@@ -55,7 +55,7 @@ test('mid-stream error keeps partial text and permits another request', async ({
 })
 
 test('network failure shows a friendly error and restores controls', async ({ page }) => {
-  await page.route('**/api/chat/stream', (route) => route.abort('connectionrefused'))
+  await page.route('**/api/chat', (route) => route.abort('connectionrefused'))
   await page.getByRole('textbox').fill('hello')
   await page.getByRole('button', { name: 'Send', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('Unable to reach the server')

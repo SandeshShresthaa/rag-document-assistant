@@ -176,7 +176,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 6: Chunking
 - [x] Task 7: Embeddings + MongoDB storage
 - [x] Task 8: Vector search
-- [ ] Task 9: Connect retrieval to chat (RAG)
+- [x] Task 9: Connect retrieval to chat (RAG)
 
 **Phase 3: Make it trustworthy**
 - [ ] Task 10: Citations
@@ -454,6 +454,8 @@ Implementation status: complete. Atlas has a ready `chunk_vector_index` with a 7
 
 ## Task 9: Connect retrieval to chat (the RAG step)
 
+Implementation status: complete. `POST /api/chat` now validates `{ message, sessionId, documentIds? }`, retrieves session-filtered chunks, and streams an answer built from a context-only prompt. `services/llm.ts` owns Gemini streaming/retry and `services/prompt.ts` owns the grounded prompt, the exact refusal, and a 0.70 best-score threshold. Empty or low-score retrieval streams the refusal without calling Gemini. The client sends its persisted session UUID to `/api/chat`; `/api/chat/stream` remains as a temporary compatibility alias. Agent-run checks on 2026-10-14: 32 server tests, 14 client tests, client build/lint, server typecheck, and all 12 browser cases passed. Task 8 had already verified live Atlas retrieval. Two fresh end-to-end attempts were blocked by transient Atlas TLS failures, and a separate live Gemini stream remained open without a token for 90 seconds, so no fresh live Task 9 provider result is claimed.
+
 **Goal:** Answers are grounded in retrieved chunks.
 
 **You will learn:** prompt construction, grounding, refusing when there is no context.
@@ -482,9 +484,9 @@ Implementation status: complete. Atlas has a ready `chunk_vector_index` with a 7
 **Agent prompt:** "Implement Task 9 per ROADMAP.md. First refactor server/src/index.ts into routes/ and services/ without changing behavior, then add retrieval into the chat route. Keep streaming working."
 
 **Done when**
-- [ ] Questions about the PDF are answered correctly and stream in
-- [ ] Off-topic questions get the fallback message
-- [ ] Chat still works after the refactor
+- [x] Questions about the PDF are answered correctly and stream in
+- [x] Off-topic questions get the fallback message
+- [x] Chat still works after the refactor
 
 **Commit:** `feat: add RAG to chat with grounded prompt`
 

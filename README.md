@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 8 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, and retrieved through Atlas Vector Search with session isolation. Live Gemini, Atlas persistence, and semantic retrieval are verified. Task 9 (connect retrieval to streaming chat) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 9 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with session isolation and off-topic refusal. Task 10 (citations) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 
@@ -50,23 +50,23 @@ Follow the roadmap's $0 budget, typed code without `any`, and dependency rules. 
 
 ## Task 4a: server streaming
 
-`POST /api/chat/stream` accepts `{ "message": "..." }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The client now uses `/api/chat/stream`. The original JSON endpoint remains available.
+`POST /api/chat` accepts `{ "message": "...", "sessionId": "...", "documentIds": [] }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The client uses `/api/chat`; `/api/chat/stream` is a temporary compatibility alias.
 
 Both routes require `GEMINI_MODEL` from `server/.env`. Streaming setup retries use an abortable wait; failures after tokens begin are reported without restarting the answer. To test against Gemini, start the server, then run in PowerShell:
 
 ```powershell
-'{"message":"Explain SSE in three short sentences."}' | curl.exe -N -X POST http://localhost:5000/api/chat/stream -H "Content-Type: application/json" --data-binary '@-'
+'{"message":"What does this document explain?","sessionId":"YOUR-BROWSER-SESSION-UUID"}' | curl.exe -N -X POST http://localhost:5000/api/chat -H "Content-Type: application/json" --data-binary '@-'
 ```
 
 Expect `data: {"type":"token","text":"..."}` events separated by blank lines, followed by `data: [DONE]`. `-N` disables curl output buffering. Press Ctrl+C during a long response to disconnect.
 
-The handler lives in `server/src/routes/chatStream.ts`. It sets `Content-Type: text/event-stream` to identify the format, `Cache-Control: no-cache` to prevent cached reuse without validation, and `Connection: keep-alive` for the HTTP/1.1 connection. `X-Accel-Buffering: no` asks compatible proxies not to buffer. `flushHeaders()` sends the headers before waiting for Gemini. Each event ends with a blank line (`\n\n`); network chunks do not necessarily align with events.
+The handler lives in `server/src/routes/chat.ts`, with Gemini access in `server/src/services/llm.ts`. It sets `Content-Type: text/event-stream` to identify the format, `Cache-Control: no-cache` to prevent cached reuse without validation, and `Connection: keep-alive` for the HTTP/1.1 connection. `X-Accel-Buffering: no` asks compatible proxies not to buffer. `flushHeaders()` sends the headers before retrieval and generation. Each event ends with a blank line (`\n\n`); network chunks do not necessarily align with events.
 
 Disconnecting aborts the local SDK request. This does not guarantee that Google's service stops generating or accounting for usage. Automated tests exercise this behavior with simulated responses and do not call Gemini.
 
 ## Task 4b: client streaming
 
-`client/src/api/chatStream.ts` sends the question and reads SSE with a TextDecoder and an incomplete-event buffer. App adds an empty assistant message, appends tokens immutably, and restores the controls after success or failure. Partial answers remain visible on errors. While loading, Stop aborts the request and preserves partial text. Send returns after cleanup; aborting is not an error.
+`client/src/api/chatStream.ts` sends the question and anonymous session ID, then reads SSE with a TextDecoder and an incomplete-event buffer. App adds an empty assistant message, appends tokens immutably, and restores the controls after success or failure. Partial answers remain visible on errors. While loading, Stop aborts the request and preserves partial text. Send returns after cleanup; aborting is not an error.
 
 Run `npm test` in `client/` using Node 22.6+ (verified with Node 24.15.0). Tests cover fragmented UTF-8, event boundaries, completion, and failure handling without external API calls. Also run `npm run build` and `npm run lint`. With both servers running, submit a longer question and verify progressive text, scrolling, and another successful submission. Browser verification passed using a deterministic model fixture and the actual SSE handler. Live Gemini streaming was also verified separately.
 

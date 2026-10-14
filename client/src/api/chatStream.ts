@@ -5,15 +5,15 @@ type StreamChatOptions = {
   signal?: AbortSignal
 }
 
-export async function streamChat(message: string, options: StreamChatOptions): Promise<void> {
+export async function streamChat(message: string, sessionId: string, options: StreamChatOptions): Promise<void> {
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
     options.signal?.throwIfAborted()
     const apiUrl = import.meta.env?.VITE_API_URL ?? 'http://localhost:5000'
-    const response = await fetch(`${apiUrl}/api/chat/stream`, {
+    const response = await fetch(`${apiUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, sessionId }),
       signal: options.signal,
     })
 
