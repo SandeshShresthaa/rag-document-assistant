@@ -16,6 +16,7 @@ type EmbedOptions = {
   model: string;
   dimensions: number;
   batchSize?: number;
+  taskType?: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
   waitBetweenBatches?: (milliseconds: number) => Promise<void>;
 };
 
@@ -40,7 +41,7 @@ export function createEmbedTexts(embedContent: EmbedContent, options: EmbedOptio
           contents: batch.map((text) => ({ role: "user", parts: [{ text }] })),
           config: {
             outputDimensionality: options.dimensions,
-            taskType: "RETRIEVAL_DOCUMENT",
+            taskType: options.taskType ?? "RETRIEVAL_DOCUMENT",
           },
         }),
         { models: [options.model] },
@@ -65,6 +66,7 @@ export function createEmbedTexts(embedContent: EmbedContent, options: EmbedOptio
 }
 
 let defaultEmbedTexts: ((texts: string[]) => Promise<number[][]>) | undefined;
+let defaultEmbedQuery: ((texts: string[]) => Promise<number[][]>) | undefined;
 
 export function embedTexts(texts: string[]): Promise<number[][]> {
   if (!defaultEmbedTexts) {
@@ -76,4 +78,18 @@ export function embedTexts(texts: string[]): Promise<number[][]> {
     );
   }
   return defaultEmbedTexts(texts);
+}
+
+export async function embedQuery(text: string): Promise<number[]> {
+  if (!defaultEmbedQuery) {
+    const config = getEmbeddingConfig();
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    defaultEmbedQuery = createEmbedTexts(
+      (params) => ai.models.embedContent(params),
+      { ...config, taskType: "RETRIEVAL_QUERY" },
+    );
+  }
+  const [embedding] = await defaultEmbedQuery([text]);
+  if (!embedding) throw new Error("The embedding service did not return a query vector.");
+  return embedding;
 }

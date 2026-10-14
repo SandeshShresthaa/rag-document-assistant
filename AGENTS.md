@@ -2,7 +2,7 @@
 
 Read ROADMAP.md fully before feature work, especially Parts 0-2 and the Status Tracker. It defines scope and target architecture.
 
-Current status: Tasks 1 through 7 complete. Task 7 agent checks on 2026-10-14: 28 server tests, 14 client tests, server typecheck, client build/lint, and all 12 browser cases passed. Live Gemini returned a 768-dimensional embedding; live Atlas acceptance stored and read back one document with two 768-dimensional chunk embeddings and matching session metadata. Task 8 is next. Earlier live Gemini streaming and JSON busy handling were verified on 2026-10-05; provider availability can vary.
+Current status: Tasks 1 through 8 complete. Task 8 checks on 2026-10-14: 32 server tests and server typecheck passed; the live Atlas vector index reached READY, five semantic questions returned the expected page first (scores 0.8393-0.8902), a different session returned no results, and a document filter returned only the selected document. `/api/debug/search` is temporary and must be removed before deployment. Task 9 is next. Task 7 client checks remain 14 unit tests, build/lint, and 12 browser cases passed. Earlier live Gemini streaming and JSON busy handling were verified on 2026-10-05; provider availability can vary.
 
 - Work on one requested task at a time. Explain what changes and why.
 - Honor the developer's choice to write core logic personally; implement it when explicitly requested.

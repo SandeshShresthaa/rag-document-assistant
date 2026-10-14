@@ -6,11 +6,13 @@ import { createChatHandler } from "./routes/chat.js";
 import { createChatStreamHandler } from "./routes/chatStream.js";
 import { generateWithRetry } from "./services/generateWithRetry.js";
 import { documentsRouter } from "./routes/documents.js";
+import { debugSearchRouter } from "./routes/debugSearch.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api/documents", documentsRouter);
+app.use("/api/debug", debugSearchRouter);
 
 const model = process.env.GEMINI_MODEL?.trim();
 if (!model) throw new Error("Set GEMINI_MODEL in server/.env before starting the server.");

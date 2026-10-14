@@ -175,7 +175,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 5: PDF upload + text extraction
 - [x] Task 6: Chunking
 - [x] Task 7: Embeddings + MongoDB storage
-- [ ] Task 8: Vector search
+- [x] Task 8: Vector search
 - [ ] Task 9: Connect retrieval to chat (RAG)
 
 **Phase 3: Make it trustworthy**
@@ -412,6 +412,8 @@ Implementation status: complete. Uploads require an anonymous UUID session, embe
 
 ## Task 8: Vector search
 
+Implementation status: complete. Atlas has a ready `chunk_vector_index` with a 768-dimensional cosine vector field plus `sessionId` and `documentId` filter fields. `services/retrieval.ts` embeds questions with `RETRIEVAL_QUERY`, runs `$vectorSearch` with 100 candidates and a default limit of 5, projects source metadata and vector scores, and always filters by session. Optional document IDs become an ObjectId `$in` filter. The temporary `/api/debug/search` route supports `q`, `sessionId`, optional comma-separated `documentIds`, and optional `k`. Live checks on 2026-10-14 asked five questions; the expected page ranked first with scores from 0.8393 to 0.8902. A different session returned zero results and the document filter returned only the selected document.
+
 **Goal:** Given a question, return the most relevant chunks.
 
 **You will learn:** vector indexes, cosine similarity, `$vectorSearch`, top-k tuning.
@@ -441,9 +443,9 @@ Implementation status: complete. Uploads require an anonymous UUID session, embe
 **Agent can do this:** helping with index JSON syntax (verify against Atlas docs).
 
 **Done when**
-- [ ] Questions about the PDF return chunks that clearly contain the answer
-- [ ] Results only include the current session's chunks
-- [ ] You can say what `numCandidates`, `limit` and score mean
+- [x] Questions about the PDF return chunks that clearly contain the answer
+- [x] Results only include the current session's chunks
+- [x] You can say what `numCandidates`, `limit` and score mean
 
 **Pitfalls:** the index takes a minute to build; filter fields must be declared as `filter` in the index; question and chunks must use the same model and dimensions.
 **Commit:** `feat: add vector search retrieval`

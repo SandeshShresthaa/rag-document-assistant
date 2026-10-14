@@ -45,3 +45,13 @@ test("handles empty input and validates text and batch size", async () => {
   await assert.rejects(embed([" "]), /non-empty/);
   assert.throws(() => createEmbedTexts(async () => ({}), { model: "test", dimensions: 2, batchSize: 0 }), RangeError);
 });
+
+test("supports retrieval-query embeddings separately from document embeddings", async () => {
+  const taskTypes: string[] = [];
+  const embed = createEmbedTexts(async (params) => {
+    taskTypes.push(params.config.taskType);
+    return { embeddings: [{ values: [1, 2] }] };
+  }, { model: "test", dimensions: 2, taskType: "RETRIEVAL_QUERY" });
+  assert.deepEqual(await embed(["question"]), [[1, 2]]);
+  assert.deepEqual(taskTypes, ["RETRIEVAL_QUERY"]);
+});

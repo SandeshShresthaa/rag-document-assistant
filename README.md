@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 7 are complete. PDFs are extracted, chunked, embedded with Gemini, and stored in MongoDB under an anonymous browser session. Live Gemini and Atlas persistence are verified. Task 8 (vector search) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 8 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, and retrieved through Atlas Vector Search with session isolation. Live Gemini, Atlas persistence, and semantic retrieval are verified. Task 9 (connect retrieval to streaming chat) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 
@@ -20,6 +20,8 @@ On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`. Both `.env` files are 
 ## Code organization
 
 `client/src/App.tsx` contains chat layout/state and calls `api/chatStream.ts`; `hooks/useSessionId.ts` keeps one anonymous UUID in local storage. On the server, `index.ts` wires Express and Gemini to the routes. `services/embeddings.ts` batches document embeddings, `db/mongo.ts` reuses one MongoDB client, and `db/documents.ts` stores document and chunk records.
+
+`services/retrieval.ts` embeds questions and queries the Atlas `chunk_vector_index`. During development, `GET /api/debug/search?q=...&sessionId=...` returns ranked chunks and scores; remove this debug route before deployment.
 
 Create modules as features need them, following roadmap Part 2:
 
