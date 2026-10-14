@@ -1,5 +1,8 @@
+import type { Source } from '../types/chat'
+
 type StreamChatOptions = {
   onToken: (text: string) => void
+  onSources?: (sources: Source[]) => void
   onDone: () => void
   onError: (message: string) => void
   signal?: AbortSignal
@@ -62,6 +65,12 @@ export async function streamChat(message: string, sessionId: string, options: St
             }
             receivedText ||= parsed.text.length > 0
             options.onToken(parsed.text)
+          } else if (parsed.type === 'sources') {
+            if (!('sources' in parsed) || !Array.isArray(parsed.sources) ||
+              !parsed.sources.every(isSource)) {
+              throw new Error('The server returned invalid sources.')
+            }
+            options.onSources?.(parsed.sources)
           } else if (parsed.type === 'error') {
             throw new Error('message' in parsed && typeof parsed.message === 'string'
               ? parsed.message : 'Unable to finish the answer. Please try again.')
@@ -83,4 +92,12 @@ export async function streamChat(message: string, sessionId: string, options: St
       reader.releaseLock()
     }
   }
+}
+
+function isSource(value: unknown): value is Source {
+  return typeof value === 'object' && value !== null &&
+    'documentName' in value && typeof value.documentName === 'string' &&
+    'page' in value && typeof value.page === 'number' && Number.isInteger(value.page) && value.page > 0 &&
+    'snippet' in value && typeof value.snippet === 'string' &&
+    'score' in value && typeof value.score === 'number' && Number.isFinite(value.score)
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
 import { streamChat } from './api/chatStream'
 import { UploadBox } from './components/UploadBox'
+import { SourcesPanel } from './components/SourcesPanel'
 import { useSessionId } from './hooks/useSessionId'
 import './App.css'
 
@@ -46,6 +47,14 @@ function App() {
               : message,
           ))
         },
+        onSources: (sources) => {
+          if (controller.signal.aborted) return
+          setMessages((previous) => previous.map((message, index) =>
+            index === previous.length - 1 && message.role === 'assistant'
+              ? { ...message, sources }
+              : message,
+          ))
+        },
         onDone: () => {}, // Cleanup below restores the controls for every outcome.
         onError: (message) => setError(message),
       })
@@ -73,6 +82,7 @@ function App() {
           <article className={`message message-${message.role}`} key={index}>
             <span className="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
             <p>{message.text}</p>
+            {message.role === 'assistant' && <SourcesPanel sources={message.sources ?? []} />}
           </article>
         ))}
         {loading && !messages.at(-1)?.text && (

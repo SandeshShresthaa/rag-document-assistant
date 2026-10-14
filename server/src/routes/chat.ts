@@ -16,6 +16,23 @@ function sendToken(res: Parameters<RequestHandler>[1], text: string) {
   res.write(`data: ${JSON.stringify({ type: "token", text })}\n\n`);
 }
 
+function createSnippet(text: string): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  return normalized.length <= 200 ? normalized : `${normalized.slice(0, 197).trimEnd()}...`;
+}
+
+function sendSources(res: Parameters<RequestHandler>[1], chunks: SearchResult[]) {
+  res.write(`data: ${JSON.stringify({
+    type: "sources",
+    sources: chunks.map((chunk) => ({
+      documentName: chunk.documentName,
+      page: chunk.page,
+      snippet: createSnippet(chunk.text),
+      score: chunk.score,
+    })),
+  })}\n\n`);
+}
+
 export function createChatHandler(
   dependencies: ChatDependencies = { retrieve: searchChunks, answer: streamAnswer },
 ): RequestHandler {
@@ -58,6 +75,7 @@ export function createChatHandler(
       if (!chunks.length || chunks[0].score < MIN_RETRIEVAL_SCORE) {
         sendToken(res, NO_CONTEXT_MESSAGE);
       } else {
+        sendSources(res, chunks);
         const stream = await dependencies.answer(buildPrompt(question, chunks), controller.signal);
         for await (const chunk of stream) {
           if (controller.signal.aborted || res.destroyed) break;

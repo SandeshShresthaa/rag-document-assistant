@@ -31,6 +31,13 @@
 .message-assistant { background: #f1f5f9; }
 .message-role { font-size: 13px; font-weight: 600; }
 .message p { margin: 4px 0 0; white-space: pre-wrap; }
+.sources-panel { margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 10px; }
+.sources-panel summary { cursor: pointer; color: #1d4ed8; font-weight: 600; }
+.sources-panel ol { margin: 10px 0 0; padding-left: 24px; }
+.sources-panel li + li { margin-top: 12px; }
+.sources-panel strong, .sources-panel span { display: block; }
+.sources-panel span { margin-top: 2px; color: #64748b; font-size: 13px; }
+.sources-panel li p { margin-top: 4px; color: #334155; font-size: 14px; }
 .thinking { color: #475569; }
 .chat-footer { border-top: 1px solid #e2e8f0; }
 .error { color: #b91c1c; margin: 0 0 12px; overflow-wrap: anywhere; }

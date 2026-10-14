@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 9 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with session isolation and off-topic refusal. Task 10 (citations) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 10 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt. Grounded answers include numbered citations and a collapsible Sources panel; off-topic refusals show no sources. Task 11 (multiple documents and session separation) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 
@@ -35,7 +35,7 @@ Create modules as features need them, following roadmap Part 2:
 | Server `services/` | Feature logic and external API calls |
 | Server `db/` | Database access |
 
-Task 4 introduced the streaming helper and route separation; Task 9 will extend the server services for RAG. Keep refactors small and preserve existing behavior.
+The app streams grounded RAG answers and source metadata through the same SSE response. Keep refactors small and preserve existing behavior.
 
 ## Working process
 

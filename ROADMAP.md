@@ -179,7 +179,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 9: Connect retrieval to chat (RAG)
 
 **Phase 3: Make it trustworthy**
-- [ ] Task 10: Citations
+- [x] Task 10: Citations
 - [ ] Task 11: Multiple documents + session separation
 - [ ] Task 12: Error handling + edge cases
 - [ ] Task 13: Evaluation
@@ -496,6 +496,8 @@ Implementation status: complete. `POST /api/chat` now validates `{ message, sess
 
 ## Task 10: Citations
 
+Implementation status: complete. Grounded chat responses emit ordered source metadata before answer tokens, and the prompt asks Gemini to cite the matching context numbers. The client validates source events, stores them on the assistant message, and renders an accessible collapsible panel with document, page, score, and snippet. No-context responses omit source metadata and show no panel.
+
 **Goal:** Every answer shows where it came from.
 
 **Steps**
@@ -504,6 +506,8 @@ Implementation status: complete. `POST /api/chat` now validates `{ message, sess
 3. Client: store `sources` on the assistant message. Create `SourcesPanel`: collapsible list under each answer showing document, page, and snippet. Clicking `[1]` in the answer highlights the matching source (nice to have).
 
 **Done when:** each answer has a Sources panel with correct document and page; an answer with no context shows none.
+
+Agent-run validation (2026-10-14): 32 server tests and 16 client tests passed; server typecheck, client build, and client lint passed. All 14 browser cases passed through the real SSE handler with simulated retrieval/model responses, including aligned citation details and no Sources panel for the no-context refusal.
 **Commit:** `feat: show source citations for answers`
 
 ---

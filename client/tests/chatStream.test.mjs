@@ -4,6 +4,10 @@ import { streamChat } from '../src/api/chatStream.ts'
 
 const encoder = new TextEncoder()
 const token = (text) => `data: ${JSON.stringify({ type: 'token', text })}\n\n`
+const sourceList = [{
+  documentName: 'guide.pdf', page: 2, snippet: 'Stored in MongoDB.', score: 0.91,
+}]
+const sources = (items = sourceList) => `data: ${JSON.stringify({ type: 'sources', sources: items })}\n\n`
 const sessionId = '123e4567-e89b-42d3-a456-426614174000'
 
 async function run(t, response) {
@@ -52,6 +56,25 @@ test('keeps partial text and reports a server error without success', async (t) 
   assert.deepEqual(await run(t, sse(token('partial') + 'data: {"type":"error","message":"Model busy"}\n\ndata: [DONE]\n\n')), {
     tokens: ['partial'], errors: ['Model busy'], done: 0,
   })
+})
+
+test('delivers validated source metadata', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () =>
+    sse(sources() + token('Answer [1].') + 'data: [DONE]\n\n'))
+  const received = []
+  await streamChat('hello', sessionId, {
+    onToken: () => {},
+    onSources: (items) => received.push(...items),
+    onDone: () => {},
+    onError: assert.fail,
+  })
+  assert.deepEqual(received, sourceList)
+})
+
+test('rejects malformed source metadata', async (t) => {
+  const result = await run(t, sse(sources([{ documentName: 'guide.pdf', page: 0 }]) + token('ignored')))
+  assert.equal(result.errors[0], 'The server returned invalid sources.')
+  assert.equal(result.done, 0)
 })
 
 for (const [name, response] of [

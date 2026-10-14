@@ -55,12 +55,13 @@ test("retrieves context, builds a grounded prompt and streams the answer", async
     assert.equal(response.status, 200);
     assert.match(response.headers.get("content-type") ?? "", /text\/event-stream/);
     assert.equal(await response.text(),
-      'data: {"type":"token","text":"Stored "}\n\ndata: {"type":"token","text":"in MongoDB."}\n\ndata: [DONE]\n\n');
+      'data: {"type":"sources","sources":[{"documentName":"guide.pdf","page":2,"snippet":"MongoDB stores document chunks.","score":0.91}]}\n\ndata: {"type":"token","text":"Stored "}\n\ndata: {"type":"token","text":"in MongoDB."}\n\ndata: [DONE]\n\n');
   });
   assert.deepEqual(retrieval, { question: "What is stored?", options: {
     sessionId, documentIds: [source.documentId],
   } });
   assert.match(prompt, /Answer ONLY using the context/);
+  assert.match(prompt, /Cite each factual claim.*\[1\].*\[2\]/);
   assert.match(prompt, /\[1\] \(file: guide\.pdf, page 2\) MongoDB stores document chunks\./);
   assert.match(prompt, /Question: What is stored\?$/);
 });
@@ -114,7 +115,11 @@ test("retrieval and mid-stream failures send safe errors and DONE", async () => 
       assert.deepEqual(JSON.parse(events.pop()!.slice(6)), {
         type: "error", message: "Unable to finish the answer. Please try again.",
       });
-      assert.equal(events.length, failure === "stream" ? 1 : 0);
+      assert.equal(events.length, failure === "stream" ? 2 : 0);
+      if (failure === "stream") {
+        assert.match(events[0], /"type":"sources"/);
+        assert.match(events[1], /"type":"token","text":"partial"/);
+      }
     });
   }
 });

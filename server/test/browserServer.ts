@@ -16,7 +16,7 @@ let aborted = 0;
 let started = 0;
 app.get("/test-state", (_req, res) => { res.json({ aborted, started }); });
 app.post("/api/chat", createChatHandler({
-  retrieve: async () => [{
+  retrieve: async (question) => question === "off-topic" ? [] : [{
     documentId: "507f1f77bcf86cd799439011", documentName: "test.pdf", page: 1,
     chunkIndex: 0, text: "Test browser context.", score: 0.9,
   }],
@@ -26,10 +26,10 @@ app.post("/api/chat", createChatHandler({
     return (async function* () {
     try {
       await delay(question === "delayed" ? 10000 : 300, undefined, { signal });
-      yield { text: "First chunk." };
+      yield { text: question === "citation" ? "Answer from the document [1]." : "First chunk." };
       await delay(question === "slow" ? 10000 : 800, undefined, { signal });
       if (question === "error") throw new Error("simulated failure");
-      yield { text: " Final chunk." };
+      if (question !== "citation") yield { text: " Final chunk." };
     } catch (error) {
       if (signal?.aborted) aborted++;
       throw error;
