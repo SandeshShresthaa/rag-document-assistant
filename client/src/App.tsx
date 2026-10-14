@@ -3,6 +3,7 @@ import type { Message } from './types/chat'
 import { streamChat } from './api/chatStream'
 import { UploadBox } from './components/UploadBox'
 import { SourcesPanel } from './components/SourcesPanel'
+import { DocumentList } from './components/DocumentList'
 import { useSessionId } from './hooks/useSessionId'
 import './App.css'
 
@@ -12,6 +13,7 @@ function App() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [documentsVersion, setDocumentsVersion] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
 
@@ -72,7 +74,8 @@ function App() {
         <h1>Document Assistant</h1>
         <p>Ask a question to start a conversation.</p>
       </header>
-      <UploadBox />
+      <UploadBox sessionId={sessionId} onUploaded={() => setDocumentsVersion((value) => value + 1)} />
+      <DocumentList sessionId={sessionId} refreshKey={documentsVersion} />
 
       <section className="message-list" role="log" aria-label="Conversation" aria-live="polite">
         {messages.length === 0 && (

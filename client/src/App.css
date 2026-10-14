@@ -66,6 +66,15 @@
 .upload-row input { flex: 1; min-width: 0; max-width: 100%; }
 .upload-row button { padding: 10px 16px; border: 0; border-radius: 8px; background: #1d4ed8; color: white; }
 .upload-row button:hover:not(:disabled) { background: #1e40af; }
+.document-list { padding: 16px 24px; border-bottom: 1px solid #e2e8f0; }
+.document-list h2 { margin: 0 0 8px; font-size: 18px; }
+.document-list > p { margin: 6px 0; color: #64748b; }
+.document-list ul { margin: 0; padding: 0; list-style: none; }
+.document-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+.document-list li + li { border-top: 1px solid #e2e8f0; }
+.document-list strong, .document-list small { display: block; }
+.document-list small { margin-top: 2px; color: #64748b; }
+.document-list button { border: 1px solid #b91c1c; border-radius: 6px; padding: 7px 10px; color: #b91c1c; background: #fff; }
 .composer .stop-button { background: #b91c1c; }
 .composer .stop-button:hover { background: #991b1b; }
 @media (max-width: 480px) {

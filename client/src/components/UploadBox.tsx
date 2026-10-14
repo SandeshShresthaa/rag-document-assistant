@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { uploadDocument } from '../api/uploadDocument'
-import { useSessionId } from '../hooks/useSessionId'
 
-export function UploadBox() {
-  const sessionId = useSessionId()
+type UploadBoxProps = {
+  sessionId: string
+  onUploaded: () => void
+}
+
+export function UploadBox({ sessionId, onUploaded }: UploadBoxProps) {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [status, setStatus] = useState('')
@@ -21,6 +24,7 @@ export function UploadBox() {
     try {
       const result = await uploadDocument(file, sessionId, controller.signal)
       setStatus(`Saved ${result.name}: ${result.pages} ${result.pages === 1 ? 'page' : 'pages'}, ${result.chunks} ${result.chunks === 1 ? 'chunk' : 'chunks'}.`)
+      onUploaded()
     } catch (error) {
       if (!controller.signal.aborted) {
         setStatus('')

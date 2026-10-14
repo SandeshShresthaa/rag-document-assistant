@@ -180,7 +180,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 
 **Phase 3: Make it trustworthy**
 - [x] Task 10: Citations
-- [ ] Task 11: Multiple documents + session separation
+- [x] Task 11: Multiple documents + session separation
 - [ ] Task 12: Error handling + edge cases
 - [ ] Task 13: Evaluation
 
@@ -514,6 +514,8 @@ Agent-run validation (2026-10-14): 32 server tests and 16 client tests passed; s
 
 ## Task 11: Multiple documents + session separation
 
+Implementation status: complete. The documents API lists and deletes only records owned by the supplied anonymous session. Deletion removes both matching chunks and the document record. The client automatically refreshes a per-session document list after upload and supports deletion. Uploads are limited to 5 documents and 500 chunks per session to protect the free Atlas tier.
+
 **Goal:** Manage several documents, and keep each user's data private.
 
 **Steps**
@@ -523,6 +525,8 @@ Agent-run validation (2026-10-14): 32 server tests and 16 client tests passed; s
 4. Limits: max documents per session (e.g. 5) and max total chunks, to protect the free Atlas tier.
 
 **Done when:** two browsers (or incognito) cannot see each other's documents; deleting removes chunks from Atlas.
+
+Agent-run validation (2026-10-14): 35 server tests and 16 client tests passed; server typecheck, client build, and client lint passed. All 15 browser cases passed through the real document and chat routes with deterministic provider/storage fixtures. Route tests simulate two distinct sessions and verify cross-session listing and deletion isolation; database tests verify session-scoped filters on list, chunk deletion, and document deletion.
 **Commit:** `feat: manage multiple documents with per-session isolation`
 
 ---

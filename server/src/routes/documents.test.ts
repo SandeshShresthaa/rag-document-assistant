@@ -34,6 +34,7 @@ function uploadBody(data?: Buffer, type = "application/pdf", field = "file", ses
 test("extracts, chunks, embeds and stores a real multipart PDF", async () => {
   const stored: unknown[] = [];
   const router = createDocumentsRouter({
+    usage: async () => ({ documents: 0, chunks: 0 }),
     embed: async (texts) => texts.map((_, index) => [index, 1, 2]),
     store: async (document) => { stored.push(document); return "507f1f77bcf86cd799439011"; },
   });
@@ -62,6 +63,7 @@ test("extracts, chunks, embeds and stores a real multipart PDF", async () => {
 test("returns clear validation errors without embedding invalid uploads", async () => {
   let embedCalls = 0;
   const router = createDocumentsRouter({
+    usage: async () => ({ documents: 0, chunks: 0 }),
     embed: async () => { embedCalls++; return []; },
     store: async () => "unused",
   });
@@ -89,6 +91,7 @@ test("returns clear validation errors without embedding invalid uploads", async 
 test("reports embedding and storage failures without leaking details", async () => {
   for (const failure of ["embed", "store"] as const) {
     const router = createDocumentsRouter({
+      usage: async () => ({ documents: 0, chunks: 0 }),
       embed: async (texts) => {
         if (failure === "embed") throw new Error("private embedding failure");
         return texts.map(() => [1]);
@@ -106,4 +109,61 @@ test("reports embedding and storage failures without leaking details", async () 
       assert.deepEqual(await response.json(), { error: "Unable to save the PDF. Please try again." });
     });
   }
+});
+
+test("lists and deletes documents only through the matching session", async () => {
+  const otherSession = "223e4567-e89b-42d3-a456-426614174000";
+  const documentId = "507f1f77bcf86cd799439011";
+  const listCalls: string[] = [];
+  const removeCalls: Array<{ documentId: string; sessionId: string }> = [];
+  const router = createDocumentsRouter({
+    list: async (sessionId) => {
+      listCalls.push(sessionId);
+      return sessionId === validSessionId ? [{
+        documentId, name: "owned.pdf", pages: 2, chunks: 3, createdAt: "2026-10-14T00:00:00.000Z",
+      }] : [];
+    },
+    remove: async (id, sessionId) => {
+      removeCalls.push({ documentId: id, sessionId });
+      return id === documentId && sessionId === validSessionId;
+    },
+  });
+  await withServer(router, async (url) => {
+    const owned = await fetch(`${url}?sessionId=${validSessionId}`);
+    assert.deepEqual(await owned.json(), { documents: [{
+      documentId, name: "owned.pdf", pages: 2, chunks: 3, createdAt: "2026-10-14T00:00:00.000Z",
+    }] });
+    const isolated = await fetch(`${url}?sessionId=${otherSession}`);
+    assert.deepEqual(await isolated.json(), { documents: [] });
+    const forbiddenDelete = await fetch(`${url}/${documentId}?sessionId=${otherSession}`, { method: "DELETE" });
+    assert.equal(forbiddenDelete.status, 404);
+    const deleted = await fetch(`${url}/${documentId}?sessionId=${validSessionId}`, { method: "DELETE" });
+    assert.equal(deleted.status, 204);
+  });
+  assert.deepEqual(listCalls, [validSessionId, otherSession]);
+  assert.deepEqual(removeCalls, [
+    { documentId, sessionId: otherSession },
+    { documentId, sessionId: validSessionId },
+  ]);
+});
+
+test("enforces document and chunk limits before embedding", async () => {
+  let embedCalls = 0;
+  for (const usage of [
+    { documents: 5, chunks: 5, expected: /up to 5 documents/ },
+    { documents: 1, chunks: 500, expected: /up to 500 document chunks/ },
+  ]) {
+    const router = createDocumentsRouter({
+      usage: async () => usage,
+      embed: async () => { embedCalls++; return []; },
+    });
+    await withServer(router, async (url) => {
+      const response = await fetch(url, { method: "POST", body: uploadBody(makePdf([
+        "Enough searchable document text for one chunk.",
+      ])) });
+      assert.equal(response.status, 409);
+      assert.match((await response.json()).error, usage.expected);
+    });
+  }
+  assert.equal(embedCalls, 0);
 });

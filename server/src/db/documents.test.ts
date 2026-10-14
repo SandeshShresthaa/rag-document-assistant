@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { Db } from "mongodb";
-import { storeDocumentWithDb, type StoredDocument } from "./documents.js";
+import { ObjectId, type Db } from "mongodb";
+import {
+  deleteDocumentWithDb, listDocumentsWithDb, storeDocumentWithDb, type StoredDocument,
+} from "./documents.js";
 
 const input: StoredDocument = {
   sessionId: "123e4567-e89b-42d3-a456-426614174000",
@@ -53,4 +55,39 @@ test("rejects mismatched vectors and cleans up both collections after a write fa
   } as unknown as Db;
   await assert.rejects(storeDocumentWithDb(database, input), /write failed/);
   assert.deepEqual(cleanup.sort(), ["many:chunks", "one:documents"]);
+});
+
+test("lists and deletes with session-scoped database filters", async () => {
+  const documentId = "507f1f77bcf86cd799439011";
+  const sessionId = input.sessionId;
+  const calls: Array<{ operation: string; filter: unknown }> = [];
+  const cursor = {
+    sort: () => cursor,
+    toArray: async () => [{
+      _id: new ObjectId(documentId), name: "guide.pdf", pages: 2,
+      chunkCount: 3, createdAt: new Date("2026-10-14T00:00:00.000Z"),
+    }],
+  };
+  const database = {
+    collection(name: string) {
+      return {
+        find: (filter: unknown) => { calls.push({ operation: `find:${name}`, filter }); return cursor; },
+        findOne: async (filter: unknown) => { calls.push({ operation: `findOne:${name}`, filter }); return { _id: documentId }; },
+        deleteMany: async (filter: unknown) => { calls.push({ operation: `deleteMany:${name}`, filter }); },
+        deleteOne: async (filter: unknown) => {
+          calls.push({ operation: `deleteOne:${name}`, filter });
+          return { deletedCount: 1 };
+        },
+      };
+    },
+  } as unknown as Db;
+
+  assert.deepEqual(await listDocumentsWithDb(database, sessionId), [{
+    documentId, name: "guide.pdf", pages: 2, chunks: 3, createdAt: "2026-10-14T00:00:00.000Z",
+  }]);
+  assert.equal(await deleteDocumentWithDb(database, documentId, sessionId), true);
+  for (const call of calls) assert.equal((call.filter as { sessionId: string }).sessionId, sessionId);
+  assert.deepEqual(calls.map((call) => call.operation), [
+    "find:documents", "findOne:documents", "deleteMany:chunks", "deleteOne:documents",
+  ]);
 });
