@@ -6,10 +6,13 @@ import { ObjectId } from "mongodb";
 import { createChatHandler } from "../src/routes/chat.js";
 import { createDocumentsRouter } from "../src/routes/documents.js";
 import type { DocumentSummary } from "../src/db/documents.js";
+import { errorHandler } from "../src/utils/errors.js";
+import { createRateLimiter } from "../src/utils/rateLimit.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api", createRateLimiter({ limit: 100 }));
 const browserDocuments = new Map<string, DocumentSummary[]>();
 app.use("/api/documents", createDocumentsRouter({
   embed: async (texts) => texts.map(() => [0.1, 0.2, 0.3]),
@@ -38,6 +41,7 @@ app.use("/api/documents", createDocumentsRouter({
 }));
 let aborted = 0;
 let started = 0;
+const attempts = new Map<string, number>();
 app.get("/test-state", (_req, res) => { res.json({ aborted, started }); });
 app.post("/api/chat", createChatHandler({
   retrieve: async (question) => question === "off-topic" ? [] : [{
@@ -47,12 +51,16 @@ app.post("/api/chat", createChatHandler({
   answer: async (prompt, signal) => {
     started++;
     const question = prompt.match(/Question: ([\s\S]*)$/)?.[1] ?? "";
+    const attempt = (attempts.get(question) ?? 0) + 1;
+    attempts.set(question, attempt);
     return (async function* () {
     try {
       await delay(question === "delayed" ? 10000 : 300, undefined, { signal });
       yield { text: question === "citation" ? "Answer from the document [1]." : "First chunk." };
       await delay(question === "slow" ? 10000 : 800, undefined, { signal });
-      if (question === "error") throw new Error("simulated failure");
+      if (question === "error" || (question === "error-once" && attempt === 1)) {
+        throw new Error("simulated failure");
+      }
       if (question !== "citation") yield { text: " Final chunk." };
     } catch (error) {
       if (signal?.aborted) aborted++;
@@ -61,4 +69,5 @@ app.post("/api/chat", createChatHandler({
     })();
   },
 }));
+app.use(errorHandler);
 app.listen(5051, "127.0.0.1");

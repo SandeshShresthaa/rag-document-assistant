@@ -41,6 +41,9 @@
 .thinking { color: #475569; }
 .chat-footer { border-top: 1px solid #e2e8f0; }
 .error { color: #b91c1c; margin: 0 0 12px; overflow-wrap: anywhere; }
+.error-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.error-row .error { margin: 0; }
+.retry-button { border: 1px solid #b91c1c; border-radius: 6px; padding: 7px 12px; color: #b91c1c; background: #fff; }
 .composer label { display: block; margin-bottom: 8px; font-weight: 600; }
 .composer-row { display: flex; gap: 12px; }
 .composer input {

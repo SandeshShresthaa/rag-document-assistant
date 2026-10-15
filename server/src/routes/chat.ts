@@ -4,6 +4,7 @@ import { busyMessage, isBusyError } from "../services/generateWithRetry.js";
 import { streamAnswer, type AnswerStream } from "../services/llm.js";
 import { buildPrompt, MIN_RETRIEVAL_SCORE, NO_CONTEXT_MESSAGE } from "../services/prompt.js";
 import { searchChunks, type SearchOptions, type SearchResult } from "../services/retrieval.js";
+import { AppError } from "../utils/errors.js";
 
 type ChatDependencies = {
   retrieve: (question: string, options: SearchOptions) => Promise<SearchResult[]>;
@@ -11,6 +12,7 @@ type ChatDependencies = {
 };
 
 const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export const MAX_MESSAGE_LENGTH = 2_000;
 
 function sendToken(res: Parameters<RequestHandler>[1], text: string) {
   res.write(`data: ${JSON.stringify({ type: "token", text })}\n\n`);
@@ -36,22 +38,26 @@ function sendSources(res: Parameters<RequestHandler>[1], chunks: SearchResult[])
 export function createChatHandler(
   dependencies: ChatDependencies = { retrieve: searchChunks, answer: streamAnswer },
 ): RequestHandler {
-  return async (req, res) => {
+  return async (req, res, next) => {
     const body: unknown = req.body;
     if (typeof body !== "object" || body === null ||
       !("message" in body) || typeof body.message !== "string" || !body.message.trim()) {
-      res.status(400).json({ error: "A non-empty message is required." });
+      next(new AppError(400, "A non-empty message is required."));
+      return;
+    }
+    if (body.message.trim().length > MAX_MESSAGE_LENGTH) {
+      next(new AppError(400, `Messages must be ${MAX_MESSAGE_LENGTH} characters or fewer.`));
       return;
     }
     if (!("sessionId" in body) || typeof body.sessionId !== "string" ||
       !SESSION_ID_PATTERN.test(body.sessionId)) {
-      res.status(400).json({ error: "A valid sessionId is required." });
+      next(new AppError(400, "A valid sessionId is required."));
       return;
     }
     const documentIds = "documentIds" in body ? body.documentIds : undefined;
     if (documentIds !== undefined && (!Array.isArray(documentIds) ||
       documentIds.some((id) => typeof id !== "string" || !ObjectId.isValid(id)))) {
-      res.status(400).json({ error: "documentIds must be an array of valid MongoDB IDs." });
+      next(new AppError(400, "documentIds must be an array of valid MongoDB IDs."));
       return;
     }
 

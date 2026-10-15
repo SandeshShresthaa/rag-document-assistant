@@ -8,6 +8,8 @@ import {
   deleteDocument, getSessionUsage, listDocuments, storeDocument,
   type DocumentSummary, type StoredDocument,
 } from "../db/documents.js";
+import { busyMessage, isBusyError } from "../services/generateWithRetry.js";
+import { AppError } from "../utils/errors.js";
 
 export const MAX_PDF_BYTES = 5 * 1024 * 1024;
 export const MAX_DOCUMENTS_PER_SESSION = 5;
@@ -44,34 +46,34 @@ export function createDocumentsRouter(
   };
   const router = Router();
 
-  router.get("/", async (req, res) => {
+  router.get("/", async (req, res, next) => {
     const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId.trim() : "";
     if (!SESSION_ID_PATTERN.test(sessionId)) {
-      res.status(400).json({ error: "A valid sessionId is required." });
+      next(new AppError(400, "A valid sessionId is required."));
       return;
     }
     try {
       res.json({ documents: await dependencies.list(sessionId) });
     } catch {
-      res.status(500).json({ error: "Unable to load documents. Please try again." });
+      next(new AppError(503, "Unable to load documents. Please try again."));
     }
   });
 
-  router.delete("/:id", async (req, res) => {
+  router.delete("/:id", async (req, res, next) => {
     const sessionId = typeof req.query.sessionId === "string" ? req.query.sessionId.trim() : "";
     if (!SESSION_ID_PATTERN.test(sessionId) || !ObjectId.isValid(req.params.id)) {
-      res.status(400).json({ error: "A valid document id and sessionId are required." });
+      next(new AppError(400, "A valid document id and sessionId are required."));
       return;
     }
     try {
       const deleted = await dependencies.remove(req.params.id, sessionId);
       if (!deleted) {
-        res.status(404).json({ error: "Document not found." });
+        next(new AppError(404, "Document not found."));
         return;
       }
       res.status(204).end();
     } catch {
-      res.status(500).json({ error: "Unable to delete the document. Please try again." });
+      next(new AppError(503, "Unable to delete the document. Please try again."));
     }
   });
 
@@ -81,35 +83,35 @@ export function createDocumentsRouter(
         const message = error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE"
           ? "PDF must be 5 MB or smaller."
           : error instanceof PdfValidationError ? error.message : "Upload one PDF using the file field.";
-        res.status(400).json({ error: message });
+        next(new AppError(400, message));
         return;
       }
       next();
     });
-  }, async (req, res) => {
+  }, async (req, res, next) => {
     if (!req.file) {
-      res.status(400).json({ error: "Choose a PDF to upload." });
+      next(new AppError(400, "Choose a PDF to upload."));
       return;
     }
     const sessionId = typeof req.body.sessionId === "string" ? req.body.sessionId.trim() : "";
     if (!SESSION_ID_PATTERN.test(sessionId)) {
-      res.status(400).json({ error: "A valid sessionId is required." });
+      next(new AppError(400, "A valid sessionId is required."));
       return;
     }
     try {
       const usage = await dependencies.usage(sessionId);
       if (usage.documents >= MAX_DOCUMENTS_PER_SESSION) {
-        res.status(409).json({ error: `This session can store up to ${MAX_DOCUMENTS_PER_SESSION} documents.` });
+        next(new AppError(409, `This session can store up to ${MAX_DOCUMENTS_PER_SESSION} documents.`));
         return;
       }
       const pages = await extractPages(req.file.buffer);
       const chunks = chunkPages(pages);
       if (!chunks.length) {
-        res.status(400).json({ error: "The PDF does not contain enough text to create a searchable chunk." });
+        next(new AppError(400, "The PDF does not contain enough text to create a searchable chunk."));
         return;
       }
       if (usage.chunks + chunks.length > MAX_CHUNKS_PER_SESSION) {
-        res.status(409).json({ error: `This session can store up to ${MAX_CHUNKS_PER_SESSION} document chunks.` });
+        next(new AppError(409, `This session can store up to ${MAX_CHUNKS_PER_SESSION} document chunks.`));
         return;
       }
       const embeddings = await dependencies.embed(chunks.map((chunk) => chunk.text));
@@ -122,9 +124,10 @@ export function createDocumentsRouter(
       });
       res.status(201).json({ documentId, name: req.file.originalname, pages: pages.length, chunks: chunks.length });
     } catch (error) {
-      res.status(error instanceof PdfValidationError ? 400 : 500).json({
-        error: error instanceof PdfValidationError ? error.message : "Unable to save the PDF. Please try again.",
-      });
+      next(error instanceof PdfValidationError
+        ? new AppError(400, error.message)
+        : new AppError(isBusyError(error) ? 503 : 500,
+          isBusyError(error) ? busyMessage : "Unable to save the PDF. Please try again."));
     }
   });
   return router;

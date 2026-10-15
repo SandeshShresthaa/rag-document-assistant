@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 11 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt. Grounded answers include citations and source details. Each anonymous browser session can list and delete only its own documents, with limits of 5 documents and 500 chunks. Task 12 (error handling and edge cases) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 12 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. Anonymous sessions isolate document access. Input limits, rate limiting, safe API errors, provider/PDF/network handling, stream cancellation, and Retry actions keep the UI recoverable. Task 13 (evaluation) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Local setup
 

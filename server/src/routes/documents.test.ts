@@ -4,12 +4,14 @@ import test from "node:test";
 import express from "express";
 import { createDocumentsRouter, MAX_PDF_BYTES } from "./documents.js";
 import { makePdf } from "../../test/pdfFixture.js";
+import { errorHandler } from "../utils/errors.js";
 
 const validSessionId = "123e4567-e89b-42d3-a456-426614174000";
 
 async function withServer(router: ReturnType<typeof createDocumentsRouter>, check: (url: string) => Promise<void>) {
   const app = express();
   app.use("/api/documents", router);
+  app.use(errorHandler);
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -109,6 +111,22 @@ test("reports embedding and storage failures without leaking details", async () 
       assert.deepEqual(await response.json(), { error: "Unable to save the PDF. Please try again." });
     });
   }
+});
+
+test("maps exhausted embedding capacity to the friendly busy response", async () => {
+  const router = createDocumentsRouter({
+    usage: async () => ({ documents: 0, chunks: 0 }),
+    embed: async () => { throw { status: 503 }; },
+  });
+  await withServer(router, async (url) => {
+    const response = await fetch(url, { method: "POST", body: uploadBody(makePdf([
+      "Enough searchable document text for a chunk.",
+    ])) });
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {
+      error: "The AI model is busy. Please try again in a moment.",
+    });
+  });
 });
 
 test("lists and deletes documents only through the matching session", async () => {

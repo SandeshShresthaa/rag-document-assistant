@@ -20,7 +20,13 @@ export async function streamChat(message: string, sessionId: string, options: St
       signal: options.signal,
     })
 
-    if (!response.ok) throw new Error('Unable to get an answer. Please try again.')
+    if (!response.ok) {
+      let result: unknown
+      try { result = await response.json() } catch { result = undefined }
+      throw new Error(typeof result === 'object' && result !== null &&
+        'error' in result && typeof result.error === 'string'
+        ? result.error : 'Unable to get an answer. Please try again.')
+    }
     if (!response.headers.get('content-type')?.includes('text/event-stream') || !response.body) {
       throw new Error('The server did not return a chat stream.')
     }

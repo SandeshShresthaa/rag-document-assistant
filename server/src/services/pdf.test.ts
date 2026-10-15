@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractPages } from "./pdf.js";
+import { extractPages, mapPdfError } from "./pdf.js";
 import { makePdf } from "../../test/pdfFixture.js";
 
 test("extracts text per page and preserves pages without text in mixed PDFs", async () => {
@@ -13,4 +13,10 @@ test("rejects image-only, invalid and corrupt PDFs with clear messages", async (
   await assert.rejects(extractPages(makePdf([null])), /No text found/);
   await assert.rejects(extractPages(Buffer.from("not a PDF")), /not a valid PDF/);
   await assert.rejects(extractPages(Buffer.from("%PDF-1.4\nbroken")), /corrupted/);
+});
+
+test("maps password-protected parser failures to an actionable message", () => {
+  const error = new Error("private parser details");
+  error.name = "PasswordException";
+  assert.match(mapPdfError(error).message, /password-protected.*unlocked copy/i);
 });

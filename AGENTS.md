@@ -2,7 +2,7 @@
 
 Read ROADMAP.md fully before feature work, especially Parts 0-2 and the Status Tracker. It defines scope and target architecture.
 
-Current status: Tasks 1 through 11 complete. Task 11 agent checks on 2026-10-14: 35 server tests, 16 client tests, server typecheck, client build/lint, and all 15 browser cases passed. Documents can be listed and deleted only by their owning anonymous session; deletion removes matching chunks, and uploads are limited to 5 documents and 500 chunks per session. Task 8 live Atlas retrieval passed earlier that day; Task 11 acceptance uses deterministic storage/provider fixtures through the real routes. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 12 is next.
+Current status: Tasks 1 through 12 complete. Task 12 agent checks on 2026-10-15: 39 server tests, 17 client tests, server typecheck, client build/lint, and all 16 browser cases passed. The API has centralized safe JSON errors, 2,000-character chat limits, per-session/IP rate limiting, friendly provider/database/PDF/network handling, and client Retry actions. Task 8 live Atlas retrieval passed on 2026-10-14; Task 12 acceptance uses deterministic storage/provider fixtures through the real routes. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 13 is next.
 
 - Work on one requested task at a time. Explain what changes and why.
 - Honor the developer's choice to write core logic personally; implement it when explicitly requested.

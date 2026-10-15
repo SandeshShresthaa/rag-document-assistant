@@ -18,12 +18,16 @@ export async function extractPages(buffer: Buffer): Promise<PdfPage[]> {
     }
     return pages;
   } catch (error) {
-    if (error instanceof PdfValidationError) throw error;
-    if (error instanceof Error && error.name === "PasswordException") {
-      throw new PdfValidationError("This PDF is password-protected. Upload an unlocked copy.");
-    }
-    throw new PdfValidationError("Unable to read this PDF. It may be corrupted; try another file.");
+    throw mapPdfError(error);
   } finally {
     await parser.destroy();
   }
+}
+
+export function mapPdfError(error: unknown): PdfValidationError {
+  if (error instanceof PdfValidationError) return error;
+  if (error instanceof Error && error.name === "PasswordException") {
+    return new PdfValidationError("This PDF is password-protected. Upload an unlocked copy.");
+  }
+  return new PdfValidationError("Unable to read this PDF. It may be corrupted; try another file.");
 }

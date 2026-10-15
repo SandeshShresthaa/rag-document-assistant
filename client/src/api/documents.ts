@@ -3,7 +3,12 @@ import type { DocumentSummary } from '../types/document'
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
 export async function listDocuments(sessionId: string): Promise<DocumentSummary[]> {
-  const response = await fetch(`${apiUrl}/api/documents?sessionId=${encodeURIComponent(sessionId)}`)
+  let response: Response
+  try {
+    response = await fetch(`${apiUrl}/api/documents?sessionId=${encodeURIComponent(sessionId)}`)
+  } catch (error) {
+    throw new Error('Unable to reach the server. Check that it is running and try again.', { cause: error })
+  }
   const result: unknown = await response.json()
   if (!response.ok) throw new Error(readError(result, 'Unable to load documents.'))
   if (typeof result !== 'object' || result === null || !('documents' in result) ||
@@ -14,10 +19,15 @@ export async function listDocuments(sessionId: string): Promise<DocumentSummary[
 }
 
 export async function deleteDocument(documentId: string, sessionId: string): Promise<void> {
-  const response = await fetch(
-    `${apiUrl}/api/documents/${encodeURIComponent(documentId)}?sessionId=${encodeURIComponent(sessionId)}`,
-    { method: 'DELETE' },
-  )
+  let response: Response
+  try {
+    response = await fetch(
+      `${apiUrl}/api/documents/${encodeURIComponent(documentId)}?sessionId=${encodeURIComponent(sessionId)}`,
+      { method: 'DELETE' },
+    )
+  } catch (error) {
+    throw new Error('Unable to reach the server. Check that it is running and try again.', { cause: error })
+  }
   if (response.ok) return
   let result: unknown
   try { result = await response.json() } catch { result = undefined }

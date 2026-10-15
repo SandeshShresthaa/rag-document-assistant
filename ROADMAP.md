@@ -181,7 +181,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 **Phase 3: Make it trustworthy**
 - [x] Task 10: Citations
 - [x] Task 11: Multiple documents + session separation
-- [ ] Task 12: Error handling + edge cases
+- [x] Task 12: Error handling + edge cases
 - [ ] Task 13: Evaluation
 
 **Phase 4: Polish and ship**
@@ -533,6 +533,8 @@ Agent-run validation (2026-10-14): 35 server tests and 16 client tests passed; s
 
 ## Task 12: Error handling + edge cases
 
+Implementation status: complete. Expected server failures use a typed `AppError` and centralized JSON error middleware, while streaming failures remain SSE error events. Chat messages are limited to 2,000 characters, API traffic is limited to 30 requests per minute per session or IP, and provider, database, malformed JSON, PDF, network, and cancellation failures return safe messages. The client reads server error messages and offers Retry for failed chat and document-list requests.
+
 **Goal:** Nothing crashes; every failure has a clear message.
 
 **Cases to handle**
@@ -549,6 +551,8 @@ Agent-run validation (2026-10-14): 35 server tests and 16 client tests passed; s
 3. Client: map error responses to friendly messages; add a "Retry" button on failures.
 
 **Done when:** you can deliberately trigger each case above and the UI always recovers.
+
+Agent-run validation (2026-10-15): 39 server tests and 17 client tests passed; server typecheck, client build, and client lint passed. All 16 browser cases passed through the real routes with deterministic provider/storage fixtures, including stopping streams, network recovery, upload validation, mid-stream failure, and a successful Retry. Tests cover Gemini 429/503 retry behavior, friendly exhausted-embedding errors, malformed and oversized input, scanned/corrupt/password-protected/oversized PDFs, Atlas/retrieval failure masking, session/IP rate limiting, and abort recovery.
 **Commit:** `fix: handle errors and edge cases`
 
 ---

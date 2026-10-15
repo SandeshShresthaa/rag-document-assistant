@@ -6,6 +6,7 @@ import express from "express";
 import { createChatHandler } from "./chat.js";
 import { MIN_RETRIEVAL_SCORE, NO_CONTEXT_MESSAGE } from "../services/prompt.js";
 import type { SearchResult } from "../services/retrieval.js";
+import { errorHandler } from "../utils/errors.js";
 
 const sessionId = "123e4567-e89b-42d3-a456-426614174000";
 const source: SearchResult = {
@@ -20,6 +21,7 @@ async function withServer(
   const app = express();
   app.use(express.json());
   app.post("/api/chat", createChatHandler(dependencies));
+  app.use(errorHandler);
   const server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
@@ -88,6 +90,7 @@ test("validates the complete RAG request before starting SSE", async () => {
       [{ sessionId }, "A non-empty message is required."],
       [{ message: "hello", sessionId: "bad" }, "A valid sessionId is required."],
       [{ message: "hello", sessionId, documentIds: ["bad"] }, "documentIds must be an array of valid MongoDB IDs."],
+      [{ message: "x".repeat(2001), sessionId }, "Messages must be 2000 characters or fewer."],
     ] as const;
     for (const [body, message] of cases) {
       const response = await post(url, body);

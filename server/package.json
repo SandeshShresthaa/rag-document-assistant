@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "test": "tsx --test src/db/*.test.ts src/routes/*.test.ts src/services/*.test.ts",
+    "test": "tsx --test src/db/*.test.ts src/routes/*.test.ts src/services/*.test.ts src/utils/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

@@ -73,6 +73,18 @@ test('mid-stream error keeps partial text and permits another request', async ({
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
+test('Retry replaces a failed answer and restores the conversation', async ({ page }) => {
+  const input = page.getByRole('textbox', { name: 'Your message' })
+  await input.fill('error-once')
+  await input.press('Enter')
+  await expect(page.getByRole('alert')).toHaveText('Unable to finish the answer. Please try again.')
+  await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
+  await page.getByRole('button', { name: 'Retry' }).click()
+  await expect(page.locator('.message-assistant > p')).toHaveText('First chunk. Final chunk.')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0)
+})
+
 test('network failure shows a friendly error and restores controls', async ({ page }) => {
   await page.route('**/api/chat', (route) => route.abort('connectionrefused'))
   await page.getByRole('textbox').fill('hello')

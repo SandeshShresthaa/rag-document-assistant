@@ -12,6 +12,7 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState('')
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -27,7 +28,7 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [sessionId, refreshKey])
+  }, [sessionId, refreshKey, reloadKey])
 
   async function remove(document: DocumentSummary) {
     if (deletingId) return
@@ -64,7 +65,12 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
           ))}
         </ul>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && (
+        <div className="error-row">
+          <p className="error" role="alert">{error}</p>
+          <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>
+        </div>
+      )}
     </section>
   )
 }

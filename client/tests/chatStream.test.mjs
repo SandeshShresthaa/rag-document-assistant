@@ -58,6 +58,15 @@ test('keeps partial text and reports a server error without success', async (t) 
   })
 })
 
+test('uses a friendly JSON message for an HTTP error', async (t) => {
+  const response = new Response(JSON.stringify({ error: 'Too many requests. Please wait a minute and try again.' }), {
+    status: 429, headers: { 'Content-Type': 'application/json' },
+  })
+  const result = await run(t, response)
+  assert.deepEqual(result.errors, ['Too many requests. Please wait a minute and try again.'])
+  assert.equal(result.done, 0)
+})
+
 test('delivers validated source metadata', async (t) => {
   t.mock.method(globalThis, 'fetch', async () =>
     sse(sources() + token('Answer [1].') + 'data: [DONE]\n\n'))

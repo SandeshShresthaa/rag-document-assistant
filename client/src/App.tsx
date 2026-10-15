@@ -13,6 +13,7 @@ function App() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [failedMessage, setFailedMessage] = useState('')
   const [documentsVersion, setDocumentsVersion] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
@@ -23,19 +24,21 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ block: 'nearest' })
   }, [messages, loading])
 
-  async function sendMessage() {
-    const text = input.trim()
+  async function sendMessage(retryText?: string) {
+    const text = (retryText ?? input).trim()
     if (!text || controllerRef.current) return
     const controller = new AbortController()
     controllerRef.current = controller
 
-    setMessages((previous) => [
-      ...previous,
-      { role: 'user', text },
-      { role: 'assistant', text: '' },
-    ])
-    setInput('')
+    setMessages((previous) => retryText
+      ? previous.map((message, index) =>
+        index === previous.length - 1 && message.role === 'assistant'
+          ? { role: 'assistant', text: '' }
+          : message)
+      : [...previous, { role: 'user', text }, { role: 'assistant', text: '' }])
+    if (!retryText) setInput('')
     setError('')
+    setFailedMessage('')
     setLoading(true)
 
     try {
@@ -57,8 +60,11 @@ function App() {
               : message,
           ))
         },
-        onDone: () => {}, // Cleanup below restores the controls for every outcome.
-        onError: (message) => setError(message),
+        onDone: () => setFailedMessage(''),
+        onError: (message) => {
+          setError(message)
+          setFailedMessage(text)
+        },
       })
     } finally {
       if (controllerRef.current === controller) {
@@ -95,7 +101,16 @@ function App() {
       </section>
 
       <footer className="chat-footer">
-        {error && <p className="error" role="alert">{error}</p>}
+          {error && (
+            <div className="error-row">
+              <p className="error" role="alert">{error}</p>
+              {failedMessage && !loading && (
+                <button type="button" className="retry-button" onClick={() => void sendMessage(failedMessage)}>
+                  Retry
+                </button>
+              )}
+            </div>
+          )}
         <form className="composer" onSubmit={(event) => {
           event.preventDefault()
           sendMessage()
@@ -109,6 +124,7 @@ function App() {
               value={input}
               onChange={(event) => setInput(event.target.value)}
               placeholder="Type a question..."
+              maxLength={2000}
               disabled={loading}
             />
             {loading ? (
