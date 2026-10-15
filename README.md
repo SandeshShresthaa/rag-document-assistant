@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 14 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. The responsive interface renders Markdown, provides Copy and Retry controls, and guides users to upload a document before chatting. Task 15 (deployment) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 14 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. The responsive interface renders Markdown, provides Copy and Retry controls, and guides users to upload a document before chatting. Production deployment configuration for Task 15 is ready; the live Render and Vercel URLs are pending. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Evaluation
 
@@ -28,7 +28,7 @@ On Windows, use `npm.cmd` if PowerShell blocks `npm.ps1`. Both `.env` files are 
 
 `client/src/App.tsx` contains chat layout/state and calls `api/chatStream.ts`; `hooks/useSessionId.ts` keeps one anonymous UUID in local storage. On the server, `index.ts` wires Express and Gemini to the routes. `services/embeddings.ts` batches document embeddings, `db/mongo.ts` reuses one MongoDB client, and `db/documents.ts` stores document and chunk records.
 
-`services/retrieval.ts` embeds questions and queries the Atlas `chunk_vector_index`. During development, `GET /api/debug/search?q=...&sessionId=...` returns ranked chunks and scores; remove this debug route before deployment.
+`services/retrieval.ts` embeds questions and queries the Atlas `chunk_vector_index`.
 
 Create modules as features need them, following roadmap Part 2:
 
@@ -44,6 +44,14 @@ Create modules as features need them, following roadmap Part 2:
 
 The app streams grounded RAG answers and source metadata through the same SSE response. Keep refactors small and preserve existing behavior.
 
+## Deployment
+
+The root `render.yaml` configures the server as a free Render web service. In Render, provide the secret environment variables listed in `server/.env.example` and set `CLIENT_ORIGIN` to the final Vercel origin. Atlas must allow connections from Render; use a strong database-user password.
+
+Deploy `client/` as the Vercel project root and set `VITE_API_URL` to the Render service origin. Vite reads this variable at build time, so redeploy after changing it. The client shows a cold-start notice when the initial document request takes longer than three seconds.
+
+The production server is built with `npm run build`, started with `npm start`, exposes `/api/health`, restricts CORS to `CLIENT_ORIGIN`, and does not mount development debug routes.
+
 ## Working process
 
 1. Read the selected roadmap task, including its learning goals and acceptance checks.
@@ -57,7 +65,7 @@ Follow the roadmap's $0 budget, typed code without `any`, and dependency rules. 
 
 ## Task 4a: server streaming
 
-`POST /api/chat` accepts `{ "message": "...", "sessionId": "...", "documentIds": [] }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker. The client uses `/api/chat`; `/api/chat/stream` is a temporary compatibility alias.
+`POST /api/chat` accepts `{ "message": "...", "sessionId": "...", "documentIds": [] }` and sends SSE token events, an error event on failure, and a final `data: [DONE]` marker.
 
 Both routes require `GEMINI_MODEL` from `server/.env`. Streaming setup retries use an abortable wait; failures after tokens begin are reported without restarting the answer. To test against Gemini, start the server, then run in PowerShell:
 

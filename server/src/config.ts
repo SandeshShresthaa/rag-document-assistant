@@ -22,3 +22,7 @@ export function getMongoConfig() {
     database: process.env.MONGODB_DB?.trim() || "ragdocs",
   };
 }
+
+export function getClientOrigin() {
+  return process.env.CLIENT_ORIGIN?.trim() || "http://localhost:5173";
+}

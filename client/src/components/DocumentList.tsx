@@ -11,12 +11,14 @@ type DocumentListProps = {
 export function DocumentList({ sessionId, refreshKey, onCountChange }: DocumentListProps) {
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [waking, setWaking] = useState(false)
   const [deletingId, setDeletingId] = useState('')
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     const controller = new AbortController()
+    const wakingTimer = window.setTimeout(() => setWaking(true), 3000)
     void listDocuments(sessionId)
       .then((items) => {
         if (!controller.signal.aborted) {
@@ -28,8 +30,17 @@ export function DocumentList({ sessionId, refreshKey, onCountChange }: DocumentL
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Unable to load documents.')
       })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
+      .finally(() => {
+        window.clearTimeout(wakingTimer)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+          setWaking(false)
+        }
+      })
+    return () => {
+      window.clearTimeout(wakingTimer)
+      controller.abort()
+    }
   }, [sessionId, refreshKey, reloadKey, onCountChange])
 
   async function remove(document: DocumentSummary) {
@@ -50,7 +61,9 @@ export function DocumentList({ sessionId, refreshKey, onCountChange }: DocumentL
   return (
     <section className="document-list" aria-labelledby="documents-heading">
       <h2 id="documents-heading">Your documents</h2>
-      {loading && <p role="status">Loading documents...</p>}
+      {loading && <p role="status">{waking
+        ? 'Waking up the server. This can take about 30 seconds...'
+        : 'Loading documents...'}</p>}
       {!loading && documents.length === 0 && !error && <p>No documents uploaded yet.</p>}
       {documents.length > 0 && (
         <ul>
@@ -71,7 +84,11 @@ export function DocumentList({ sessionId, refreshKey, onCountChange }: DocumentL
       {error && (
         <div className="error-row">
           <p className="error" role="alert">{error}</p>
-          <button type="button" onClick={() => setReloadKey((value) => value + 1)}>Retry</button>
+          <button type="button" onClick={() => {
+            setLoading(true)
+            setWaking(false)
+            setReloadKey((value) => value + 1)
+          }}>Retry</button>
         </div>
       )}
     </section>

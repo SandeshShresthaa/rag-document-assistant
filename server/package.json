@@ -2,12 +2,17 @@
   "name": "server",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
     "test": "tsx --test src/db/*.test.ts src/routes/*.test.ts src/services/*.test.ts src/utils/*.test.ts eval/*.test.ts",
     "eval": "tsx eval/run.ts",
     "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "keywords": [],
   "author": "",
