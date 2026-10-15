@@ -2,7 +2,7 @@
 
 Read ROADMAP.md fully before feature work, especially Parts 0-2 and the Status Tracker. It defines scope and target architecture.
 
-Current status: Tasks 1 through 12 complete. Task 12 agent checks on 2026-10-15: 39 server tests, 17 client tests, server typecheck, client build/lint, and all 16 browser cases passed. The API has centralized safe JSON errors, 2,000-character chat limits, per-session/IP rate limiting, friendly provider/database/PDF/network handling, and client Retry actions. Task 8 live Atlas retrieval passed on 2026-10-14; Task 12 acceptance uses deterministic storage/provider fixtures through the real routes. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 13 is next.
+Current status: Tasks 1 through 13 complete. Task 13 agent checks on 2026-10-15: 40 server tests and server typecheck passed; the deterministic 15-question Apollo 11 evaluation scored 83% retrieval hits, 83% answer keyword accuracy, and 3/3 correct refusals across three configurations. Optional live Atlas/Gemini evaluation is implemented but no live score is claimed. Task 12 client checks remain 17 unit tests, build/lint, and 16 browser cases. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 14 is next.
 
 - Work on one requested task at a time. Explain what changes and why.
 - Honor the developer's choice to write core logic personally; implement it when explicitly requested.

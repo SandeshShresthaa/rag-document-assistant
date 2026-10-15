@@ -1,0 +1,17 @@
+[
+  { "question": "When was Apollo 11 scheduled to launch?", "expectedAnswerContains": ["July 16"], "expectedPage": 5 },
+  { "question": "How many astronauts would travel toward the Moon?", "expectedAnswerContains": ["three-man"], "expectedPage": 5 },
+  { "question": "What message was written on the lunar module plaque?", "expectedAnswerContains": ["peace", "all mankind"], "expectedPage": 6 },
+  { "question": "What was the prime mission objective?", "expectedAnswerContains": ["manned lunar landing", "return"], "expectedPage": 7 },
+  { "question": "Who was the command module pilot?", "expectedAnswerContains": ["Michael Collins"], "expectedPage": 7 },
+  { "question": "What happens if the prime crew becomes unavailable?", "expectedAnswerContains": ["backup crew", "prepared to fly"], "expectedPage": 8 },
+  { "question": "Where would the Saturn third stage go?", "expectedAnswerContains": ["solar orbit"], "expectedPage": 10 },
+  { "question": "Who steps onto the lunar surface first?", "expectedAnswerContains": ["Armstrong"], "expectedPage": 12 },
+  { "question": "How long was the planned lunar surface activity?", "expectedAnswerContains": ["two hours", "40 minutes"], "expectedPage": 12 },
+  { "question": "How long after lunar liftoff was docking expected?", "expectedAnswerContains": ["three and a half hours"], "expectedPage": 16 },
+  { "question": "What technique controlled heat during the return coast?", "expectedAnswerContains": ["barbecue", "passive thermal control"], "expectedPage": 19 },
+  { "question": "When does the countdown start?", "expectedAnswerContains": ["28 hours"], "expectedPage": 22 },
+  { "question": "What was the crew's favorite meal?", "expectedAnswerContains": [], "outOfScope": true },
+  { "question": "How much did the mission cost in total?", "expectedAnswerContains": [], "outOfScope": true },
+  { "question": "What color was the commander's childhood bicycle?", "expectedAnswerContains": [], "outOfScope": true }
+]

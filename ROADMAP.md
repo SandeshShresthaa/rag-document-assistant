@@ -182,7 +182,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 10: Citations
 - [x] Task 11: Multiple documents + session separation
 - [x] Task 12: Error handling + edge cases
-- [ ] Task 13: Evaluation
+- [x] Task 13: Evaluation
 
 **Phase 4: Polish and ship**
 - [ ] Task 14: UI polish
@@ -559,6 +559,8 @@ Agent-run validation (2026-10-15): 39 server tests and 17 client tests passed; s
 
 ## Task 13: Evaluation (this makes the project stand out)
 
+Implementation status: complete. A 15-question benchmark uses a curated, page-numbered excerpt from NASA's public Apollo 11 press kit, including 12 grounded questions and 3 out-of-scope questions. The typed runner measures retrieval hits, answer keywords, and refusals, prints percentage tables, reports failed questions, and supports deterministic local experiments plus optional live Atlas/Gemini evaluation through the production functions.
+
 **Goal:** Measure answer quality with numbers.
 
 **Steps**
@@ -572,6 +574,8 @@ Agent-run validation (2026-10-15): 39 server tests and 17 client tests passed; s
 5. Experiment: change chunk size (500, 800, 1200), overlap, and k (3, 5, 8). Record results in `eval/RESULTS.md`.
 
 **Done when:** you have a results table, e.g. "Retrieval hit rate 85%, answer accuracy 80%, refusal accuracy 3/3 (chunk size 800, k=5)".
+
+Agent-run validation (2026-10-15): 40 server tests and server typecheck passed. The deterministic evaluation completed for chunk/overlap/k configurations 500/100/3, 800/150/5, and 1200/200/8. Each produced 10/12 retrieval hits (83%), 10/12 correct keyword answers (83%), and 3/3 correct refusals (100%). The two misses and the limitation of using short curated pages are documented in `server/eval/RESULTS.md`. Live Atlas/Gemini mode is implemented but no live score is claimed.
 **Commit:** `feat: add evaluation script and results`
 
 ---

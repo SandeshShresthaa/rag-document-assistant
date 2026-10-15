@@ -5,7 +5,14 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 12 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. Anonymous sessions isolate document access. Input limits, rate limiting, safe API errors, provider/PDF/network handling, stream cancellation, and Retry actions keep the UI recoverable. Task 13 (evaluation) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 13 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. Anonymous sessions isolate document access, failure handling keeps the UI recoverable, and a reproducible evaluation measures retrieval, answer keywords, and refusals. Task 14 (UI polish) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+
+## Evaluation
+
+Run `npm run eval` in `server/` for the reproducible Apollo 11 benchmark. The current local
+baseline reaches 83% retrieval hit rate, 83% answer keyword accuracy, and 3/3 correct refusals.
+Methodology, configuration experiments, failure analysis, and optional live-mode instructions
+are in [server/eval/RESULTS.md](server/eval/RESULTS.md).
 
 ## Local setup
 
