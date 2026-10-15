@@ -185,7 +185,7 @@ Tick boxes as you finish. (Developer: update this and the "Current status" line 
 - [x] Task 13: Evaluation
 
 **Phase 4: Polish and ship**
-- [ ] Task 14: UI polish
+- [x] Task 14: UI polish
 - [ ] Task 15: Deploy
 - [ ] Task 16: README + demo
 - [ ] Task 17: CV + LinkedIn
@@ -583,11 +583,15 @@ Agent-run validation (2026-10-15): 40 server tests and server typecheck passed. 
 # PHASE 4: Polish and ship
 
 ## Task 14: UI polish
+Implementation status: complete. The client now uses a responsive sidebar/workspace layout, renders assistant Markdown safely with `react-markdown`, provides per-answer Copy feedback, shows upload-first and ready-to-chat empty states, and disables the composer until at least one document exists. Labels, focus styles, status text, reduced-motion handling, keyboard submission, and mobile overflow behavior are covered.
+
 - Responsive layout (mobile and desktop)
 - Render answers as Markdown (a small library such as `react-markdown` is fine)
 - Copy button, empty states ("Upload a PDF to start"), disabled input until a document exists
 - Accessible: labels, keyboard use, focus states
 - Optional: dark mode
+
+Agent-run validation (2026-10-15): 17 client tests, client build, and client lint passed. All 18 browser cases passed, including Markdown rendering, clipboard feedback, upload-gated chat, deleting the final document, keyboard use, and a 390-pixel mobile viewport with no horizontal overflow. The `react-markdown` install reported zero known vulnerabilities. Dark mode remains optional and was not added.
 **Commit:** `feat: polish UI`
 
 ## Task 15: Deploy

@@ -25,6 +25,8 @@ test('lists an uploaded document and deletes it from this session', async ({ pag
   await page.getByRole('button', { name: 'Delete delete-me.pdf' }).click()
   await expect(page.getByText('delete-me.pdf', { exact: true })).toHaveCount(0)
   await expect(page.getByText('No documents uploaded yet.')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Ask a question' })).toBeDisabled()
+  await expect(page.getByText('Upload a PDF to start')).toBeVisible()
 })
 
 for (const [name, mimeType, buffer, message] of [

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Message } from './types/chat'
 import { streamChat } from './api/chatStream'
 import { UploadBox } from './components/UploadBox'
-import { SourcesPanel } from './components/SourcesPanel'
 import { DocumentList } from './components/DocumentList'
+import { MessageBubble } from './components/MessageBubble'
 import { useSessionId } from './hooks/useSessionId'
 import './App.css'
 
@@ -15,6 +15,7 @@ function App() {
   const [error, setError] = useState('')
   const [failedMessage, setFailedMessage] = useState('')
   const [documentsVersion, setDocumentsVersion] = useState(0)
+  const [documentCount, setDocumentCount] = useState<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<AbortController | null>(null)
 
@@ -24,9 +25,11 @@ function App() {
     messagesEndRef.current?.scrollIntoView({ block: 'nearest' })
   }, [messages, loading])
 
+  const updateDocumentCount = useCallback((count: number) => setDocumentCount(count), [])
+
   async function sendMessage(retryText?: string) {
     const text = (retryText ?? input).trim()
-    if (!text || controllerRef.current) return
+    if (!text || controllerRef.current || !documentCount) return
     const controller = new AbortController()
     controllerRef.current = controller
 
@@ -75,32 +78,53 @@ function App() {
   }
 
   return (
-    <main className="chat">
-      <header className="chat-header">
-        <h1>Document Assistant</h1>
-        <p>Ask a question to start a conversation.</p>
-      </header>
-      <UploadBox sessionId={sessionId} onUploaded={() => setDocumentsVersion((value) => value + 1)} />
-      <DocumentList sessionId={sessionId} refreshKey={documentsVersion} />
+    <main className="app-shell">
+      <aside className="sidebar">
+        <header className="brand">
+          <span className="brand-mark" aria-hidden="true">D</span>
+          <div>
+            <p>RAG workspace</p>
+            <h1>Document Assistant</h1>
+          </div>
+        </header>
+        <UploadBox sessionId={sessionId} onUploaded={() => setDocumentsVersion((value) => value + 1)} />
+        <DocumentList sessionId={sessionId} refreshKey={documentsVersion}
+          onCountChange={updateDocumentCount} />
+      </aside>
 
-      <section className="message-list" role="log" aria-label="Conversation" aria-live="polite">
-        {messages.length === 0 && (
-          <p className="empty-state">Your conversation will appear here.</p>
-        )}
-        {messages.map((message, index) => message.text && (
-          <article className={`message message-${message.role}`} key={index}>
-            <span className="message-role">{message.role === 'user' ? 'You' : 'Assistant'}</span>
-            <p>{message.text}</p>
-            {message.role === 'assistant' && <SourcesPanel sources={message.sources ?? []} />}
-          </article>
-        ))}
-        {loading && !messages.at(-1)?.text && (
-          <div className="message message-assistant thinking" role="status">Thinking...</div>
-        )}
-        <div ref={messagesEndRef} />
-      </section>
+      <section className="chat-panel" aria-labelledby="conversation-heading">
+        <header className="chat-header">
+          <div>
+            <p className="eyebrow">Grounded answers</p>
+            <h2 id="conversation-heading">Chat with your documents</h2>
+          </div>
+          <span className={`document-status ${documentCount ? 'ready' : ''}`}>
+            {documentCount === null ? 'Checking documents' :
+              documentCount > 0 ? `${documentCount} ready` : 'Upload required'}
+          </span>
+        </header>
 
-      <footer className="chat-footer">
+        <section className="message-list" role="log" aria-label="Conversation" aria-live="polite">
+          {messages.length === 0 && (
+            <div className="empty-state">
+              <span aria-hidden="true">{documentCount ? '✦' : '↑'}</span>
+              <h3>{documentCount ? 'Ask your first question' : 'Upload a PDF to start'}</h3>
+              <p>{documentCount
+                ? 'Answers will use only your uploaded documents and include source pages.'
+                : 'Add a text-based PDF, then ask questions about its contents.'}</p>
+            </div>
+          )}
+          {messages.map((message, index) => message.text &&
+            <MessageBubble message={message} key={index} />)}
+          {loading && !messages.at(-1)?.text && (
+            <div className="message message-assistant thinking" role="status">
+              <span className="thinking-dot" /> Searching your documents…
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </section>
+
+        <footer className="chat-footer">
           {error && (
             <div className="error-row">
               <p className="error" role="alert">{error}</p>
@@ -115,7 +139,7 @@ function App() {
           event.preventDefault()
           sendMessage()
         }}>
-          <label htmlFor="message-input">Your message</label>
+          <label htmlFor="message-input">Ask a question</label>
           <div className="composer-row">
             <input
               id="message-input"
@@ -123,20 +147,23 @@ function App() {
               type="text"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Type a question..."
+              placeholder={documentCount ? 'Ask about your documents…' : 'Upload a PDF to enable chat'}
               maxLength={2000}
-              disabled={loading}
+              disabled={loading || !documentCount}
+              aria-describedby="composer-help"
             />
             {loading ? (
               <button type="button" className="stop-button" onClick={() => controllerRef.current?.abort()}>
                 Stop
               </button>
             ) : (
-              <button type="submit" disabled={!input.trim()}>Send</button>
+              <button type="submit" disabled={!input.trim() || !documentCount}>Send</button>
             )}
           </div>
+          <p id="composer-help">Answers are grounded in your uploaded files. Press Enter to send.</p>
         </form>
-      </footer>
+        </footer>
+      </section>
     </main>
   )
 }

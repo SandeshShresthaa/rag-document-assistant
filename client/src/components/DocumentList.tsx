@@ -5,9 +5,10 @@ import type { DocumentSummary } from '../types/document'
 type DocumentListProps = {
   sessionId: string
   refreshKey: number
+  onCountChange: (count: number) => void
 }
 
-export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
+export function DocumentList({ sessionId, refreshKey, onCountChange }: DocumentListProps) {
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState('')
@@ -20,6 +21,7 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
       .then((items) => {
         if (!controller.signal.aborted) {
           setDocuments(items)
+          onCountChange(items.length)
           setError('')
         }
       })
@@ -28,7 +30,7 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [sessionId, refreshKey, reloadKey])
+  }, [sessionId, refreshKey, reloadKey, onCountChange])
 
   async function remove(document: DocumentSummary) {
     if (deletingId) return
@@ -37,6 +39,7 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
     try {
       await deleteDocument(document.documentId, sessionId)
       setDocuments((current) => current.filter((item) => item.documentId !== document.documentId))
+      onCountChange(Math.max(0, documents.length - 1))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to delete the document.')
     } finally {
@@ -57,9 +60,9 @@ export function DocumentList({ sessionId, refreshKey }: DocumentListProps) {
                 <strong>{document.name}</strong>
                 <small>{document.pages} {document.pages === 1 ? 'page' : 'pages'} · {document.chunks} {document.chunks === 1 ? 'chunk' : 'chunks'}</small>
               </span>
-              <button type="button" disabled={Boolean(deletingId)}
+              <button type="button" disabled={Boolean(deletingId)} aria-label={`Delete ${document.name}`}
                 onClick={() => void remove(document)}>
-                {deletingId === document.documentId ? 'Deleting...' : `Delete ${document.name}`}
+                {deletingId === document.documentId ? 'Deleting...' : 'Delete'}
               </button>
             </li>
           ))}

@@ -56,12 +56,13 @@ app.post("/api/chat", createChatHandler({
     return (async function* () {
     try {
       await delay(question === "delayed" ? 10000 : 300, undefined, { signal });
-      yield { text: question === "citation" ? "Answer from the document [1]." : "First chunk." };
+      yield { text: question === "citation" ? "Answer from the document [1]." :
+        question === "markdown" ? "**Bold answer**\n\n- first\n- second" : "First chunk." };
       await delay(question === "slow" ? 10000 : 800, undefined, { signal });
       if (question === "error" || (question === "error-once" && attempt === 1)) {
         throw new Error("simulated failure");
       }
-      if (question !== "citation") yield { text: " Final chunk." };
+      if (question !== "citation" && question !== "markdown") yield { text: " Final chunk." };
     } catch (error) {
       if (signal?.aborted) aborted++;
       throw error;

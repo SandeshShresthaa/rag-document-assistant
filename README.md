@@ -5,7 +5,7 @@ A learning project building a document question-answering app with React, TypeSc
 
 ## Status
 
-Tasks 1 through 13 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. Anonymous sessions isolate document access, failure handling keeps the UI recoverable, and a reproducible evaluation measures retrieval, answer keywords, and refusals. Task 14 (UI polish) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
+Tasks 1 through 14 are complete. PDFs are extracted, chunked, embedded with Gemini, stored in MongoDB, retrieved through Atlas Vector Search, and passed to a grounded streaming chat prompt with citations. The responsive interface renders Markdown, provides Copy and Retry controls, and guides users to upload a document before chatting. Task 15 (deployment) is next. See [ROADMAP.md](ROADMAP.md) for the remaining plan.
 
 ## Evaluation
 

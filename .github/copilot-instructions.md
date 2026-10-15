@@ -2,4 +2,4 @@
 
 Read and follow `AGENTS.md` and `ROADMAP.md` before working. They define learning boundaries, architecture, task scope, and acceptance checks.
 
-Current status: Tasks 1 through 13 complete. Task 13 agent checks on 2026-10-15: 40 server tests and server typecheck passed; the deterministic 15-question Apollo 11 evaluation scored 83% retrieval hits, 83% answer keyword accuracy, and 3/3 correct refusals across three configurations. Optional live Atlas/Gemini evaluation is implemented but no live score is claimed. Task 12 client checks remain 17 unit tests, build/lint, and 16 browser cases. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 14 is next.
+Current status: Tasks 1 through 14 complete. Task 14 agent checks on 2026-10-15: 17 client tests, client build/lint, and all 18 browser cases passed. The responsive UI renders safe Markdown, provides Copy controls, uses upload-first empty states, disables chat without documents, and passes a 390-pixel mobile overflow check. Task 13 server checks remain 40 tests and typecheck. `/api/debug/search` and the `/api/chat/stream` compatibility alias are temporary. Task 15 is next.
